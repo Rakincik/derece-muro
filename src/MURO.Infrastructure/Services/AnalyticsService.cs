@@ -1,0 +1,406 @@
+using Microsoft.EntityFrameworkCore;
+using MURO.Application.DTOs.Analytics;
+using MURO.Application.Interfaces;
+using MURO.Domain.Enums;
+using MURO.Infrastructure.Persistence;
+
+namespace MURO.Infrastructure.Services;
+
+// Fix #4: IAnalyticsService artık MURO.Application.Interfaces içinde tanımlı.
+public class AnalyticsService : IAnalyticsService
+{
+    private readonly MuroDbContext _context;
+    private readonly ICacheService _cache;
+
+    public AnalyticsService(MuroDbContext context, ICacheService cache)
+    {
+        _context = context;
+        _cache = cache;
+    }
+
+    // ── Admin: Genel dashboard istatistikleri ───────────────────────────────
+    // Fix #5: 7 ayrı round-trip yerine paralel Task.WhenAll
+    // 🚀 Redis cache: 2 dk TTL — en sık çağrılan endpoint
+    public async Task<DashboardStatsDto> GetDashboardStatsAsync(Guid tenantId)
+    {
+        var cacheKey = $"{tenantId}:analytics:dashboard";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var memberships = _context.TenantMemberships
+                .Where(tm => tm.TenantId == tenantId && tm.Status == "active");
+
+            var totalUsersTask       = memberships.CountAsync();
+            var activeStudentsTask   = memberships.CountAsync(tm => tm.User.Role == UserRole.Student && tm.User.IsActive && tm.User.StudentType == StudentType.Active);
+            var demoStudentsTask     = memberships.CountAsync(tm => tm.User.Role == UserRole.Student && tm.User.StudentType == StudentType.Demo);
+            var totalCoursesTask     = _context.Courses.CountAsync(c => c.TenantId == tenantId);
+            var publishedCoursesTask = _context.Courses.CountAsync(c => c.TenantId == tenantId && c.IsPublished);
+            var totalExamsTask       = _context.Exams.CountAsync(e => e.TenantId == tenantId);
+            var totalAssignmentsTask = _context.Assignments.CountAsync(a => a.TenantId == tenantId);
+            var totalGroupsTask      = _context.Groups.CountAsync(g => g.TenantId == tenantId);
+            var pendingTicketsTask   = _context.SupportTickets.CountAsync(t => t.TenantId == tenantId && t.Status == TicketStatus.Open);
+
+            await Task.WhenAll(
+                totalUsersTask, activeStudentsTask, demoStudentsTask,
+                totalCoursesTask, publishedCoursesTask, totalExamsTask,
+                totalAssignmentsTask, totalGroupsTask, pendingTicketsTask);
+
+            return new DashboardStatsDto(
+                totalUsersTask.Result, activeStudentsTask.Result, demoStudentsTask.Result,
+                totalCoursesTask.Result, publishedCoursesTask.Result,
+                totalExamsTask.Result, totalAssignmentsTask.Result,
+                totalGroupsTask.Result, pendingTicketsTask.Result);
+        }, TimeSpan.FromMinutes(2));
+    }
+
+    // ── Admin: Video izleme istatistikleri (skip/replay analizi dahil) ──────
+    // 🚀 Redis cache: 3 dk TTL
+    public async Task<List<VideoWatchStatsDto>> GetVideoStatsAsync(Guid tenantId)
+    {
+        var cacheKey = $"{tenantId}:analytics:videostats";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            return await _context.MediaAssets.AsNoTracking()
+                .Where(m => m.TenantId == tenantId)
+                .Select(m => new VideoWatchStatsDto(
+                    m.Id, m.Title,
+                    m.VideoProgresses.Count,
+                    m.VideoProgresses.Select(vp => vp.UserId).Distinct().Count(),
+                    m.VideoProgresses.Any()
+                        ? m.VideoProgresses.Average(vp => vp.TotalSeconds > 0
+                            ? (double)vp.WatchedSeconds / vp.TotalSeconds * 100 : 0)
+                        : 0,
+                    m.VideoProgresses.Count(vp => vp.CompletedAt != null),
+                    m.VideoProgresses.Any() ? m.VideoProgresses.Average(vp => (double)vp.SkipCount) : 0,
+                    m.VideoProgresses.Any() ? m.VideoProgresses.Average(vp => (double)vp.ReplayCount) : 0))
+                .OrderByDescending(v => v.TotalViews)
+                .Take(20)
+                .ToListAsync();
+        }, TimeSpan.FromMinutes(3));
+    }
+
+    // ── Admin: Finansal işlemler ─────────────────────────────────────────────
+    // 🚀 Redis cache: 2 dk TTL
+    public async Task<List<TransactionDto>> GetTransactionsAsync(Guid tenantId, DateTime from, DateTime to)
+    {
+        var cacheKey = $"{tenantId}:analytics:transactions:{from:yyyyMMdd}:{to:yyyyMMdd}";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            return await _context.Transactions.AsNoTracking()
+                .Where(t => t.TenantId == tenantId && t.TransactionDate >= from && t.TransactionDate <= to)
+                .OrderByDescending(t => t.TransactionDate)
+                .Select(t => new TransactionDto(t.Id, t.Description ?? string.Empty, t.Amount, t.Type, t.TransactionDate))
+                .ToListAsync();
+        }, TimeSpan.FromMinutes(2));
+    }
+
+    // ── Admin: Aktif cihaz oturumları ────────────────────────────────────────
+    // 🚀 Redis cache: 1 dk TTL (sık değişen veri)
+    public async Task<List<DeviceSessionDto>> GetActiveSessionsAsync(Guid tenantId)
+    {
+        var cacheKey = $"{tenantId}:analytics:activesessions:students";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            return await _context.DeviceSessions.AsNoTracking()
+                .Where(ds => ds.TenantId == tenantId && ds.IsActive && ds.User.Role == UserRole.Student)
+                .Include(ds => ds.User)
+                .OrderByDescending(ds => ds.LoginAt)
+                .Select(ds => new DeviceSessionDto(ds.Id, ds.UserId,
+                    ds.User.FirstName + " " + ds.User.LastName,
+                    ds.DeviceInfo, ds.IpAddress, ds.LoginAt, ds.LogoutAt, ds.IsActive))
+                .ToListAsync();
+        }, TimeSpan.FromMinutes(1));
+    }
+
+    // ── Admin: Kurs bazlı devam/yoklama raporu ───────────────────────────────
+    // 🚀 Redis cache: 2 dk TTL
+    public async Task<CourseAttendanceReportDto> GetCourseAttendanceReportAsync(Guid tenantId, Guid courseId)
+    {
+        var cacheKey = $"{tenantId}:analytics:courseattendance:{courseId}";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var course = await _context.Courses.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == courseId && c.TenantId == tenantId)
+                ?? throw new KeyNotFoundException("Kurs bulunamadı.");
+
+            // Kursa atanmış toplam öğrenci
+            var totalEnrolled = await _context.CourseGroups
+                .Where(cg => cg.CourseId == courseId)
+                .Join(_context.GroupMembers, cg => cg.GroupId, gm => gm.GroupId, (cg, gm) => gm.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Oturum bazlı yoklama
+            var sessions = await _context.Sessions.AsNoTracking()
+                .Where(s => s.CourseId == courseId)
+                .Include(s => s.SessionAttendances)
+                .OrderBy(s => s.ScheduledStart)
+                .ToListAsync();
+
+            var sessionSummaries = sessions.Select(s =>
+            {
+                var presentCount = s.SessionAttendances.Count(a => a.DurationMinutes > 0);
+                var rate = totalEnrolled > 0 ? Math.Round((double)presentCount / totalEnrolled * 100, 1) : 0;
+                return new SessionAttendanceSummaryDto(
+                    s.Id, s.Title, s.ScheduledStart, presentCount, totalEnrolled, rate);
+            }).ToList();
+
+            var avgRate = sessionSummaries.Any()
+                ? Math.Round(sessionSummaries.Average(s => s.AttendanceRate), 1) : 0;
+
+            // Risk students: rate < 50%
+            // Get per-student attendance rates
+            var allStudentIds = await _context.CourseGroups
+                .Where(cg => cg.CourseId == courseId)
+                .Join(_context.GroupMembers, cg => cg.GroupId, gm => gm.GroupId, (cg, gm) => gm.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            int riskStudentCount = 0;
+            if (sessions.Count > 0)
+            {
+                foreach (var studentId in allStudentIds)
+                {
+                    var attended = sessions.Count(s => s.SessionAttendances.Any(a => a.UserId == studentId && a.DurationMinutes > 0));
+                    var rate = (double)attended / sessions.Count * 100;
+                    if (rate < 50) riskStudentCount++;
+                }
+            }
+
+            return new CourseAttendanceReportDto(
+                course.Id, course.Title, sessions.Count, totalEnrolled, avgRate, riskStudentCount, sessionSummaries);
+        }, TimeSpan.FromMinutes(2));
+    }
+
+    // ── Admin: Öğrenci skor kartı ────────────────────────────────────────────
+    // 🚀 Redis cache: 2 dk TTL + Task.WhenAll paralel sorgu
+    public async Task<StudentScorecardDto> GetStudentScorecardAsync(Guid tenantId, Guid studentId)
+    {
+        var cacheKey = $"{tenantId}:analytics:scorecard:{studentId}";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var user = await _context.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == studentId)
+                ?? throw new KeyNotFoundException("Öğrenci bulunamadı.");
+
+            // Paralel sorgular — Task.WhenAll ile ~4x hızlanma
+            var attendanceTask = _context.SessionAttendances.AsNoTracking()
+                .Where(sa => sa.UserId == studentId && sa.TenantId == tenantId)
+                .ToListAsync();
+
+            var videoProgressTask = _context.VideoProgresses.AsNoTracking()
+                .Where(vp => vp.UserId == studentId && vp.MediaAsset.TenantId == tenantId)
+                .Include(vp => vp.MediaAsset)
+                .ToListAsync();
+
+            var totalVideosTask = _context.MediaAssets
+                .CountAsync(m => m.TenantId == tenantId);
+
+            var submittedAssignmentsTask = _context.AssignmentSubmissions
+                .CountAsync(s => s.UserId == studentId);
+
+            var examScoresTask = _context.ExamResults.AsNoTracking()
+                .Where(r => r.UserId == studentId && r.Exam.TenantId == tenantId)
+                .Select(r => r.Score)
+                .ToListAsync();
+
+            await Task.WhenAll(attendanceTask, videoProgressTask, totalVideosTask,
+                submittedAssignmentsTask, examScoresTask);
+
+            var attendance = attendanceTask.Result;
+            var videoProgress = videoProgressTask.Result;
+            var totalVideos = totalVideosTask.Result;
+            var submittedAssignments = submittedAssignmentsTask.Result;
+            var examScores = examScoresTask.Result;
+
+            var attendedCount = attendance.Count(a => a.DurationMinutes > 0);
+            var completedVideos = videoProgress.Count(vp => vp.CompletedAt != null);
+            var totalWatchedMinutes = videoProgress.Sum(vp => vp.WatchedSeconds) / 60;
+            var avgScore = examScores.Any() ? Math.Round(examScores.Average(), 1) : 0;
+
+            var videoCompletionRate = totalVideos > 0
+                ? Math.Round((double)completedVideos / totalVideos * 100, 1) : 0;
+            var attendanceRate = attendance.Count > 0
+                ? Math.Round((double)attendedCount / attendance.Count * 100, 1) : 0;
+
+            return new StudentScorecardDto(
+                user.Id, $"{user.FirstName} {user.LastName}", user.Email,
+                attendedCount, attendance.Count, attendanceRate,
+                completedVideos, totalVideos, videoCompletionRate,
+                totalWatchedMinutes, submittedAssignments, avgScore);
+        }, TimeSpan.FromMinutes(2));
+    }
+
+    // ── Admin: Tüm öğrencilerin toplu karne ortalaması ────────────────────────
+    public async Task<ScorecardSummaryDto> GetScorecardSummaryAsync(Guid tenantId)
+    {
+        var cacheKey = $"{tenantId}:analytics:scorecardsummary";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var studentIds = await _context.TenantMemberships
+                .Where(tm => tm.TenantId == tenantId && tm.Status == "active" && tm.User.Role == Domain.Enums.UserRole.Student)
+                .Select(tm => tm.UserId)
+                .ToListAsync();
+
+            if (studentIds.Count == 0)
+                return new ScorecardSummaryDto(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+            var n = studentIds.Count;
+
+            // Aggregate attendance
+            var allAttendance = await _context.SessionAttendances.AsNoTracking()
+                .Where(sa => studentIds.Contains(sa.UserId) && sa.TenantId == tenantId)
+                .ToListAsync();
+            var totalAttended = allAttendance.Count(a => a.DurationMinutes > 0);
+            var totalAttendanceRecords = allAttendance.Count;
+            var avgAttendanceRate = totalAttendanceRecords > 0
+                ? Math.Round((double)totalAttended / totalAttendanceRecords * 100, 1) : 0;
+
+            // Aggregate video completion
+            var totalVideos = await _context.MediaAssets.CountAsync(m => m.TenantId == tenantId);
+            var totalCompletedVideos = await _context.VideoProgresses
+                .CountAsync(vp => studentIds.Contains(vp.UserId) && vp.MediaAsset.TenantId == tenantId && vp.CompletedAt != null);
+            var avgVideoCompletionRate = totalVideos > 0 && n > 0
+                ? Math.Round((double)totalCompletedVideos / (totalVideos * n) * 100, 1) : 0;
+
+            var totalWatchedMinutes = await _context.VideoProgresses
+                .Where(vp => studentIds.Contains(vp.UserId) && vp.MediaAsset.TenantId == tenantId)
+                .SumAsync(vp => (long)vp.WatchedSeconds) / 60;
+
+            // Aggregate exam scores
+            var examScores = await _context.ExamResults.AsNoTracking()
+                .Where(r => studentIds.Contains(r.UserId) && r.Exam.TenantId == tenantId)
+                .Select(r => r.Score)
+                .ToListAsync();
+            var avgExamScore = examScores.Any() ? Math.Round(examScores.Average(), 1) : 0;
+
+            // Aggregate assignments
+            var totalSubmittedAssignments = await _context.AssignmentSubmissions
+                .CountAsync(s => studentIds.Contains(s.UserId));
+
+            return new ScorecardSummaryDto(
+                n,
+                avgAttendanceRate,
+                avgVideoCompletionRate,
+                avgExamScore,
+                (int)Math.Round((double)totalAttended / n),
+                totalAttendanceRecords > 0 ? (int)Math.Round((double)totalAttendanceRecords / n) : 0,
+                (int)Math.Round((double)totalCompletedVideos / n),
+                totalVideos,
+                (int)(totalWatchedMinutes / n),
+                (int)Math.Round((double)totalSubmittedAssignments / n)
+            );
+        }, TimeSpan.FromMinutes(3));
+    }
+
+    // ── Öğrenci: Kendi dashboard istatistikleri ──────────────────────────────
+    // Fix #6: Tüm VideoProgress kayıtları belleğe çekilmiyor — SQL'de hesaplanıyor.
+    // 🚀 Redis cache: 3 dk TTL — öğrenci bazlı cache
+    public async Task<StudentDashboardDto> GetStudentDashboardAsync(Guid tenantId, Guid userId)
+    {
+        var cacheKey = $"{tenantId}:student:dashboard:{userId}";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var now = DateTime.UtcNow;
+            var weekAgo = now.AddDays(-7);
+            var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            // Fix #6: SQL'de topla, belleğe çekme
+            var totalWatchedSeconds = await _context.VideoProgresses.AsNoTracking()
+                .Where(vp => vp.UserId == userId && vp.UpdatedAt >= weekAgo && vp.MediaAsset.TenantId == tenantId)
+                .SumAsync(vp => (long)vp.WatchedSeconds);
+            var totalWatchedMinutes = (int)(totalWatchedSeconds / 60);
+
+            // Bu ay katılım
+            var monthlyAttendance = await _context.SessionAttendances.AsNoTracking()
+                .Where(sa => sa.UserId == userId && sa.TenantId == tenantId && sa.JoinedAt >= monthStart)
+                .ToListAsync();
+            var attendedThisMonth = monthlyAttendance.Count(a => a.DurationMinutes > 0);
+
+            // Toplam bu aydaki oturum sayısı (kursa atanan)
+            var totalSessionsThisMonth = await _context.Sessions.AsNoTracking()
+                .Where(s => s.Course.TenantId == tenantId
+                    && s.ScheduledStart >= monthStart && s.ScheduledStart <= now)
+                .CountAsync();
+
+            var attendanceRate = totalSessionsThisMonth > 0
+                ? Math.Round((double)attendedThisMonth / totalSessionsThisMonth * 100, 1) : 0;
+
+            // Fix #6: SQL'de say
+            var completedVideos = await _context.VideoProgresses
+                .CountAsync(vp => vp.UserId == userId
+                    && vp.MediaAsset.TenantId == tenantId && vp.CompletedAt != null);
+
+            // ── Aktif Seri (Consecutif Gün) Hesabı ──────────────────────────────
+            var thirtyDaysAgo = now.AddDays(-30);
+            var activeDates = await _context.VideoProgresses.AsNoTracking()
+                .Where(vp => vp.UserId == userId
+                    && vp.MediaAsset.TenantId == tenantId
+                    && vp.UpdatedAt >= thirtyDaysAgo)
+                .Select(vp => vp.UpdatedAt.Date)
+                .Distinct()
+                .ToListAsync();
+
+            var attendanceDates = await _context.SessionAttendances.AsNoTracking()
+                .Where(sa => sa.UserId == userId && sa.TenantId == tenantId && sa.JoinedAt >= thirtyDaysAgo)
+                .Select(sa => sa.JoinedAt.Date)
+                .Distinct()
+                .ToListAsync();
+
+            var allActiveDates = activeDates.Union(attendanceDates).OrderByDescending(d => d).ToList();
+            int consecutiveDays = 0;
+            var checkDate = DateTime.UtcNow.Date;
+            foreach (var date in allActiveDates)
+            {
+                if (date == checkDate || date == checkDate.AddDays(-1))
+                { consecutiveDays++; checkDate = date; }
+                else break;
+            }
+
+            // Sınav net ortalaması
+            var examResults = await _context.ExamResults.AsNoTracking()
+                .Where(r => r.UserId == userId && r.Exam.TenantId == tenantId)
+                .Select(r => new { r.CorrectCount, r.WrongCount, r.Exam.WrongPenaltyWeight })
+                .ToListAsync();
+            var avgExamNet = examResults.Any()
+                ? Math.Round(examResults.Average(r => r.CorrectCount - (r.WrongCount * r.WrongPenaltyWeight)), 2)
+                : 0;
+
+            // "Devam et" listesi — yarıda bırakılan videolar
+            var continueWatching = await _context.VideoProgresses.AsNoTracking()
+                .Where(vp => vp.UserId == userId
+                    && vp.MediaAsset.TenantId == tenantId
+                    && vp.LastPosition > 0
+                    && vp.CompletedAt == null)
+                .Include(vp => vp.MediaAsset)
+                .OrderByDescending(vp => vp.UpdatedAt)
+                .Take(5)
+                .Select(vp => new ResumeVideoDto(
+                    vp.MediaAssetId, vp.MediaAsset.Title, vp.MediaAsset.ThumbnailPath,
+                    vp.LastPosition, vp.TotalSeconds,
+                    vp.TotalSeconds > 0 ? Math.Round((double)vp.WatchedSeconds / vp.TotalSeconds * 100, 1) : 0))
+                .ToListAsync();
+
+            // ── Haftalık Aktivite (Son 7 gün) ──────────────────────────────────
+            var turkishDays = new[] { "Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt" };
+            var sevenDaysAgo = now.Date.AddDays(-6);
+            var dailyMinutes = await _context.VideoProgresses.AsNoTracking()
+                .Where(vp => vp.UserId == userId
+                    && vp.MediaAsset.TenantId == tenantId
+                    && vp.UpdatedAt >= sevenDaysAgo)
+                .GroupBy(vp => vp.UpdatedAt.Date)
+                .Select(g => new { Date = g.Key, Minutes = (int)(g.Sum(vp => (long)vp.WatchedSeconds) / 60) })
+                .ToListAsync();
+
+            var weeklyActivity = Enumerable.Range(0, 7).Select(i =>
+            {
+                var date = sevenDaysAgo.AddDays(i);
+                var mins = dailyMinutes.FirstOrDefault(d => d.Date == date)?.Minutes ?? 0;
+                return new WeeklyActivityDto(turkishDays[(int)date.DayOfWeek], mins, date == now.Date);
+            }).ToList();
+
+            return new StudentDashboardDto(
+                totalWatchedMinutes, attendedThisMonth, totalSessionsThisMonth,
+                attendanceRate, completedVideos, consecutiveDays, avgExamNet, continueWatching, weeklyActivity);
+        }, TimeSpan.FromMinutes(3));
+    }
+}

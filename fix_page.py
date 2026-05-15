@@ -1,0 +1,85 @@
+﻿import sys
+
+replacements = {
+    'Ò  Ÿrenci': 'Öğrenci',
+    'gruplar ±n ±': 'gruplarını',
+    'yÒ¶netin': 'yönetin',
+    'Ò ye': 'Üye',
+    'Atamas ±': 'Ataması',
+    'Bo&Ÿ': 'Boş',
+    'henÒ¼z': 'henüz',
+    'A ŸaÒ§ta': 'Ağaçta',
+    'âš ï¸ ': '⚠️',
+    'i&Ÿaretlendi': 'işaretlendi',
+    'SonuÒ§': 'Sonuç',
+    'bulunamad ±': 'bulunamadı',
+    'AÒ§ ±klama': 'Açıklama',
+    'Ta&Ÿ ±': 'Taşı',
+    'Ò st': 'Üst',
+    'De Ÿi&Ÿtir': 'Değiştir',
+    'Olu&Ÿtur': 'Oluştur',
+    'E Ÿitim': 'Eğitim',
+    'SeÒ§in': 'Seçin',
+    'Canl ±': 'Canlı',
+    'S ±nav': 'Sınav',
+    'Ad ±': 'Adı',
+    'Ò rn:': 'Örn:',
+    'S ±n ±f ±': 'Sınıfı',
+    'Ò⬡al ±&Ÿma': 'Çalışma',
+    'KÒ¶k': 'Kök',
+    'Ba Ÿ ±ms ±z': 'Bağımsız',
+    'Ò nizleme': 'Önizleme',
+    ' °puÒ§lar ±': 'İpuçları',
+    'tan ±man ±z ±': 'tanımanızı',
+    'sa Ÿlar': 'sağlar',
+    'hiyerar&Ÿik': 'hiyerarşik',
+    'yap ±': 'yapı',
+    'Ò¶ Ÿrenciler': 'öğrenciler',
+    'seÒ§in': 'seçin',
+    'â S Haz ±r': '✅ Hazır',
+    ' °ptal': 'İptal',
+    'xŸ\"¾ Kaydet': 'Kaydet',
+    'â ¨ Olu&Ÿtur': 'Oluştur',
+    'kullan ±c ±': 'kullanıcı',
+    'Ò§ ±kar ±l ±p': 'çıkarılıp',
+    'Eri&Ÿim': 'Erişim',
+    'Yay ±na': 'Yayına',
+    'Ar&Ÿivine': 'Arşivine',
+    'Syeleri': 'Üyeleri',
+    'Taxı': 'Taşı',
+    'baxlandıxı': 'bağlandığı',
+    'dexixtirin': 'değiştirin',
+    'Baxımsız': 'Bağımsız',
+    'TSM': 'TÜM',
+    'atanmıx': 'atanmış',
+    'xekilde': 'şekilde',
+    'ixlem': 'işlem',
+    'istedi Ÿinize': 'istediğinize',
+    'DÒ¼zenle': 'Düzenle',
+    'Kullan ±c ±': 'Kullanıcı',
+    'xŸŽ¥': '🎥',
+    'xŸS ': '📴',
+    'xŸ ⬢ï¸ ': '🏕️',
+    'xŸS ': '📝',
+    'xŸ⬝⬞': '🔄',
+    'xŸŽ¯': '🎯',
+    'â⬠': '↳',
+    'â ⬝': '--',
+    'xŸ\"¡': '👉',
+    'xŸŽ¨': '🎨',
+    'xŸSa': '📂',
+    'xŸ¥': '✨',
+    ' °mha Et': 'İmha Et',
+    'aÒ§ ±klama': 'açıklama'
+}
+
+with open(r'c:\Users\Rüstem\.gemini\antigravity\scratch\muro-v2\frontend\admin\src\app\dashboard\groups\page.tsx', 'r', encoding='utf-8') as f:
+    text = f.read()
+
+for bad, good in replacements.items():
+    text = text.replace(bad, good)
+
+with open(r'c:\Users\Rüstem\.gemini\antigravity\scratch\muro-v2\frontend\admin\src\app\dashboard\groups\page.tsx', 'w', encoding='utf-8') as f:
+    f.write(text)
+
+print('File repaired!')

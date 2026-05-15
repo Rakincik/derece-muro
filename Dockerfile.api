@@ -1,0 +1,59 @@
+# ============================================
+# MURO.API — Production Dockerfile
+# Multi-stage build: SDK → Runtime
+# Includes FFmpeg for HLS video processing
+# ============================================
+
+# --- Stage 1: Build ---
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy solution and project files for layer caching
+COPY MURO.sln ./
+COPY src/MURO.Domain/MURO.Domain.csproj src/MURO.Domain/
+COPY src/MURO.Application/MURO.Application.csproj src/MURO.Application/
+COPY src/MURO.Infrastructure/MURO.Infrastructure.csproj src/MURO.Infrastructure/
+COPY src/MURO.Worker/MURO.Worker.csproj src/MURO.Worker/
+COPY src/MURO.API/MURO.API.csproj src/MURO.API/
+
+# Restore dependencies (cached layer)
+RUN dotnet restore src/MURO.API/MURO.API.csproj
+
+# Copy all source code
+COPY src/ src/
+
+# Build & publish in Release mode
+RUN dotnet publish src/MURO.API/MURO.API.csproj \
+    -c Release \
+    -o /app/publish \
+    --no-restore
+
+# --- Stage 2: Runtime ---
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+
+# Install FFmpeg for HLS video transcoding
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create required directories
+RUN mkdir -p /app/wwwroot/hls \
+             /app/wwwroot/podcasts \
+             /app/logs \
+             /tmp/muro_processing
+
+# Copy published app
+COPY --from=build /app/publish .
+
+# Environment
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://+:5292
+
+EXPOSE 5292
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:5292/health || exit 1
+
+ENTRYPOINT ["dotnet", "MURO.API.dll"]

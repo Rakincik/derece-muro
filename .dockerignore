@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.next
+.git
+.gemini
+bin
+obj
+*.tar.gz
+*.zip
+*.log
+docker-compose*.yml
+.env*
+! .env.example
+
+tests

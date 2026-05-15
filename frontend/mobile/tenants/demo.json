@@ -1,0 +1,9 @@
+{
+    "appId": "com.muro.demo",
+    "appName": "Demo Kurum",
+    "serverUrl": "http://localhost:3002",
+    "primaryColor": "#1B3B6F",
+    "accentColor": "#10B981",
+    "statusBarColor": "#0A1931",
+    "splashBackgroundColor": "#0A1931"
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MURO LMS</string>
+    <string name="title_activity_main">MURO LMS</string>
+    <string name="package_name">com.muro.student</string>
+    <string name="custom_url_scheme">com.muro.student</string>
+</resources>

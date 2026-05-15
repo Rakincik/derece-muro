@@ -1,0 +1,141 @@
+# ============================================
+# MURO LMS — Production Docker Compose
+# ============================================
+# Kullanım:
+#   1. .env.production dosyasını .env olarak kopyala ve düzenle
+#   2. docker compose -f docker-compose.prod.yml up -d --build
+# ============================================
+
+services:
+  # --- PostgreSQL 16 ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: muro_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-muro_prod}
+      POSTGRES_USER: ${DB_USER:-muro_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - muro_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-muro_user} -d ${DB_NAME:-muro_prod}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - muro_network
+
+  # --- Redis 7 ---
+  redis:
+    image: redis:7-alpine
+    container_name: muro_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-muro_redis_2024}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - muro_redisdata:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-muro_redis_2024}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - muro_network
+
+  # --- MURO API (.NET 8 + Worker + FFmpeg) ---
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: muro_api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5292:5292"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5292
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${DB_NAME:-muro_prod};Username=${DB_USER:-muro_user};Password=${DB_PASSWORD:?DB_PASSWORD is required}
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-muro_redis_2024},abortConnect=false
+      - Jwt__Secret=${JWT_SECRET:?JWT_SECRET is required}
+      - Jwt__Issuer=MURO
+      - Jwt__Audience=MURO
+      - Bbb__Url=${BBB_URL:-https://bbb.gikart.com.tr/bigbluebutton/api}
+      - Bbb__Secret=${BBB_SECRET}
+      - Bbb__WebhookSharedSecret=${BBB_WEBHOOK_SECRET:-muro-webhook-secret-2024}
+      - Bbb__DefaultAttendeePw=attendee123
+      - Bbb__DefaultModeratorPw=moderator123
+      - Bbb__Defaults__LogoutURL=${SITE_URL:-https://yourdomain.com}/admin/dashboard/courses
+      - Cors__AllowedOrigins__0=${SITE_URL:-https://yourdomain.com}
+      - Tenant__BaseDomain=${BASE_DOMAIN:-yourdomain.com}
+      - Gemini__ApiKey=${GEMINI_API_KEY:-}
+      - Webhook__Secret=${WEBHOOK_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+    volumes:
+      - muro_hls_data:/app/wwwroot/hls
+      - muro_podcasts:/app/wwwroot/podcasts
+      - muro_logs:/app/logs
+      - muro_uploads:/app/wwwroot/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - muro_network
+
+  # --- Admin Frontend (Next.js) ---
+  admin:
+    build:
+      context: ./frontend/admin
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${SITE_URL:-https://yourdomain.com}/api/v1
+    container_name: muro_admin
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOSTNAME=0.0.0.0
+    networks:
+      - muro_network
+
+  # --- Student Frontend (Next.js) ---
+  student:
+    build:
+      context: ./frontend/student
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${SITE_URL:-https://yourdomain.com}/api/v1
+    container_name: muro_student
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - HOSTNAME=0.0.0.0
+    networks:
+      - muro_network
+
+volumes:
+  muro_pgdata:
+    driver: local
+  muro_redisdata:
+    driver: local
+  muro_hls_data:
+    driver: local
+  muro_podcasts:
+    driver: local
+  muro_logs:
+    driver: local
+  muro_uploads:
+    driver: local
+
+networks:
+  muro_network:
+    driver: bridge

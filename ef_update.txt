@@ -1,0 +1,16 @@
+﻿dotnet : C:\Users\R├╝stem\.gemini\antigravity\scratch\muro-v2\src\MURO.Inf
+rastructure\MURO.Infrastructure.csproj : warning NU1902: Package 'System.I
+dentityModel.Tokens.Jwt' 7.0.0 has a known moderate severity vulnerability
+, https://github.com/advisories/GHSA-59j7-ghrg-fj52
+At line:1 char:1
++ dotnet ef database update --project src/MURO.Infrastructure --startup ..
+.
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\R├╝ste...-59j7-ghrg 
+   -fj52:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Build started...
+Build succeeded.
+[01:22:12 WRN] The foreign key property 'SessionAttendance.SessionId1' was created in shadow state because a conflicting property with the simple name 'SessionId' exists in the entity type, but is either not mapped, is already used for another relationship, or is incompatible with the associated primary key type. See https://aka.ms/efcore-relationships for information on mapping relationships in EF Core.
+Done.
