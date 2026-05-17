@@ -54,7 +54,6 @@ export default function ExamSolvePage() {
     const [result, setResult] = useState<MyExamResultDto | null>(null);
     const [myResults, setMyResults] = useState<MyExamResultDto[]>([]);
     const [submitting, setSubmitting] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
     const startedAt = useRef<string>(new Date().toISOString());
     const answersRef = useRef<Record<number, string>>({});
     const { showToast } = useToast();
