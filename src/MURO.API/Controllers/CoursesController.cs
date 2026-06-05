@@ -221,7 +221,7 @@ public class CoursesController : ControllerBase
     /// Sadece Admin ve Instructor çağırabilir.
     /// </summary>
     [HttpPost("{courseId:guid}/sessions/{sessionId:guid}/start")]
-    [Authorize(Roles = "Admin,Instructor")]
+    [Authorize(Roles = "Admin,SuperAdmin,Instructor")]
     public async Task<ActionResult<SessionStartResult>> StartSession(Guid courseId, Guid sessionId)
     {
         var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
@@ -255,7 +255,7 @@ public class CoursesController : ControllerBase
     /// Sadece Admin ve Instructor çağırabilir.
     /// </summary>
     [HttpPost("{courseId:guid}/sessions/{sessionId:guid}/end")]
-    [Authorize(Roles = "Admin,Instructor")]
+    [Authorize(Roles = "Admin,SuperAdmin,Instructor")]
     public async Task<IActionResult> EndSession(Guid courseId, Guid sessionId)
     {
         await _liveMeetingService.EndSessionAsync(GetTenantId(), courseId, sessionId);
