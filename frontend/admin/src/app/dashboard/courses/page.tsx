@@ -335,7 +335,6 @@ export default function CoursesPage() {
             const sessionTitle = `${topic.trim()} — ${dateStr}`;
             const s = await courseApi.createSession(token, tenantId, courseId, {
                 title: sessionTitle,
-                scheduledStart: today.toISOString(),
                 durationMinutes: 60,
                 recordingEnabled: true,
             });
