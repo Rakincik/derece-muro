@@ -91,6 +91,17 @@ export default function MediaLibraryPage() {
             shouldReload = true;
         }
 
+        // Also reload when an asset starts 'Processing' so the UI updates from 'Uploading' to 'Processing'
+        const currentProcessingCount = uploads.filter(u => u.status === 'success' && u.assetStatus === 'Processing').length;
+        if (currentProcessingCount > 0 && !shouldReload) {
+            // Trigger a reload if we detect a Processing asset but haven't reloaded yet for this state
+            // To prevent infinite loop, we only reload if we actually have assets in 'Uploading' state locally
+            const hasUploadingAssetsLocally = assets.some(a => a.status === 'Uploading');
+            if (hasUploadingAssetsLocally) {
+                shouldReload = true;
+            }
+        }
+
         if (shouldReload) {
             loadData();
         }
