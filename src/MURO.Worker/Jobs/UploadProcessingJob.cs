@@ -98,7 +98,14 @@ public class UploadProcessingJob : BackgroundService
         string localMp4Path = asset.FilePath!;
         bool isDownloaded = false;
 
-        if (asset.FilePath!.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+        if (asset.FilePath!.Contains("/api/v1/uploads/"))
+        {
+            var uri = new Uri(asset.FilePath);
+            var fileName = Path.GetFileName(uri.LocalPath);
+            localMp4Path = Path.Combine("wwwroot", "uploads", fileName);
+            _logger.LogInformation("Lokal dosya tespit edildi, indirme atlanıyor: {Path}", localMp4Path);
+        }
+        else if (asset.FilePath!.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
             asset.FilePath!.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
             _logger.LogInformation("URL tespit edildi, video indiriliyor: {Url}", asset.FilePath);
