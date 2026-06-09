@@ -60,13 +60,13 @@ public class HlsProcessingService : IHlsProcessingService
         string highLabel = is1080p ? "1080p" : "720p";
         string highScale = is1080p ? "1920:1080" : "1280:720";
         string highRes   = is1080p ? "1920x1080" : "1280x720";
-        string highBand  = is1080p ? "1800000" : "1200000"; // Master playlist bandwidth
+        string highBand  = is1080p ? "1400000" : "1200000"; // Master playlist bandwidth
         
-        string nvencHighBitrate = is1080p ? "1.5M" : "0.7M";
-        string nvencHighBufsize = is1080p ? "3.0M" : "1.4M";
+        string nvencHighBitrate = is1080p ? "1.2M" : "0.7M";
+        string nvencHighBufsize = is1080p ? "2.4M" : "1.4M";
         
-        string cpuHighBitrate = is1080p ? "1.55M" : "0.75M";
-        string cpuHighBufsize = is1080p ? "3.1M" : "1.5M";
+        string cpuHighBitrate = is1080p ? "1.25M" : "0.75M";
+        string cpuHighBufsize = is1080p ? "2.5M" : "1.5M";
 
         var assetDir = Path.Combine(outputBaseDir, assetId.ToString());
         Directory.CreateDirectory(Path.Combine(assetDir, "480p"));
