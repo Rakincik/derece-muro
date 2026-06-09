@@ -137,6 +137,16 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
     const activeUploadsCount = uploads.filter(u => u.status === 'uploading' || u.status === 'pending' || u.status === 'processing').length;
     const completedUploadsCount = uploads.filter(u => u.status === 'success').length;
     const totalUploadsCount = uploads.length;
+    const formatDuration = (sec: number) => {
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        if (h > 0) return `${h}s ${m}d`;
+        if (m > 0) return `${m}d ${s}sn`;
+        return `${s} saniye`;
+    };
+
+    const totalDurationSeconds = uploads.reduce((acc, u) => acc + (u.durationSeconds || 0), 0);
 
     return (
         <GlobalUploadContext.Provider value={{ uploads, startUpload, removeUpload, clearCompleted }}>
@@ -158,7 +168,7 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
                                     {activeUploadsCount > 0 ? `${totalUploadsCount} öğeden ${completedUploadsCount}'si yüklendi` : `${completedUploadsCount} öğe yüklendi`}
                                 </h4>
                                 <p className="text-[11px] text-gray-500 dark:text-[#A0AEC0]">
-                                    {activeUploadsCount > 0 ? 'Arka planda yükleniyor...' : 'Tüm yüklemeler tamamlandı'}
+                                    {activeUploadsCount > 0 ? `Arka planda yükleniyor... • Toplam Süre: ${formatDuration(totalDurationSeconds)}` : 'Tüm yüklemeler tamamlandı'}
                                 </p>
                             </div>
                         </div>
@@ -232,6 +242,13 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
                                                 <div className="mt-1.5 p-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-lg">
                                                     <p className="text-[11px] font-bold text-red-600 dark:text-red-400 mb-0.5">İşlem Başarısız</p>
                                                     <p className="text-[10px] text-red-500 dark:text-red-400 leading-relaxed">Video işlenirken bir sorun oluştu. Biçim desteklenmiyor veya dosya bozuk olabilir.</p>
+                                                </div>
+                                            )}
+                                            {upload.status === 'success' && upload.assetStatus === 'Ready' && (
+                                                <div className="mt-1.5">
+                                                    <p className="text-[11px] text-green-600 dark:text-green-400 font-medium flex items-center gap-1.5">
+                                                        İşlem tamamlandı ve yayına hazır
+                                                    </p>
                                                 </div>
                                             )}
                                             {upload.status === 'error' && (

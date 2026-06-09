@@ -184,8 +184,8 @@ export function VideoUploaderModal({ isOpen, onClose, onSuccess, courseId, folde
                 if (sf.relativePath) {
                     const parts = sf.relativePath.split('/');
                     if (parts.length > 1) {
-                        // En üstteki ana klasörü yoksaymak için index 1'den başlıyoruz (Senaryo B)
-                        const folders = parts.slice(1, parts.length - 1);
+                        // En üstteki ana klasörü DE oluşturmak için index 0'dan başlıyoruz (Senaryo A - Google Drive mantığı)
+                        const folders = parts.slice(0, parts.length - 1);
                         targetFolderId = await resolveFolderId(folders, folderId || null);
                     }
                 }
