@@ -143,8 +143,17 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
     const removeUpload = (id: string) => setUploads(prev => prev.filter(t => t.id !== id));
     const clearCompleted = () => setUploads(prev => prev.filter(t => t.status !== 'success' && t.status !== 'error'));
 
-    const activeUploadsCount = uploads.filter(u => u.status === 'uploading' || u.status === 'pending' || u.status === 'processing').length;
-    const completedUploadsCount = uploads.filter(u => u.status === 'success').length;
+    const activeUploadsCount = uploads.filter(u => 
+        u.status === 'uploading' || 
+        u.status === 'pending' || 
+        u.status === 'processing' || 
+        (u.status === 'success' && u.assetStatus !== 'Ready' && u.assetStatus !== 'Failed')
+    ).length;
+    
+    const completedUploadsCount = uploads.filter(u => 
+        u.status === 'success' && (u.assetStatus === 'Ready' || u.assetStatus === 'Failed')
+    ).length;
+    
     const totalUploadsCount = uploads.length;
     const formatDuration = (sec: number) => {
         const h = Math.floor(sec / 3600);
