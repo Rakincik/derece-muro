@@ -205,7 +205,9 @@ export default function MediaLibraryPage() {
         setConfirmModal({
             isOpen: true,
             title: "Klasörü Sil",
-            message: `"${folder.name}" klasörünü ve içindeki tüm içerikleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`,
+            message: `"${folder.name}" klasörünü silmek istediğinize emin misiniz?`,
+            confirmText: "Sil",
+            type: "danger",
             onConfirm: async () => {
                 setConfirmModal(prev => ({...prev, isOpen: false}));
                 try {
@@ -217,8 +219,49 @@ export default function MediaLibraryPage() {
                     }
                     triggerTreeRefresh();
                     loadData();
-                } catch (error) {
-                    toastError("Hata", "Klasör silinemedi");
+                } catch (error: any) {
+                    if (error.message === "NON_EMPTY_FOLDER") {
+                        setTimeout(() => {
+                            setConfirmModal({
+                                isOpen: true,
+                                title: "Klasör Silinemedi",
+                                message: "Bu klasörün altında videolar olduğu için doğrudan silemezsiniz. Klasörü silmek için önce içindeki tüm videoları silmelisiniz.",
+                                confirmText: "Yine de Sil",
+                                cancelText: "Tamam",
+                                type: "warning",
+                                onConfirm: () => {
+                                    setConfirmModal(prev => ({...prev, isOpen: false}));
+                                    setTimeout(() => {
+                                        setConfirmModal({
+                                            isOpen: true,
+                                            title: "Kalıcı Olarak Sil",
+                                            message: `"${folder.name}" klasörü ve içindeki TÜM videolar kalıcı olarak silinecektir. Bu işlemi onaylıyor musunuz?`,
+                                            confirmText: "Evet, Tamamen Sil",
+                                            cancelText: "İptal",
+                                            type: "danger",
+                                            onConfirm: async () => {
+                                                setConfirmModal(prev => ({...prev, isOpen: false}));
+                                                try {
+                                                    await mediaLibraryApi.deleteFolder(folder.id, true);
+                                                    success("Klasör ve içindeki tüm videolar kalıcı olarak silindi");
+                                                    if (currentFolderId === folder.id) {
+                                                        setCurrentFolderId(null);
+                                                        setBreadcrumbs([{ id: null, name: "Kök Dizin" }]);
+                                                    }
+                                                    triggerTreeRefresh();
+                                                    loadData();
+                                                } catch (err) {
+                                                    toastError("Hata", "Zorla silme işlemi başarısız oldu");
+                                                }
+                                            }
+                                        });
+                                    }, 300);
+                                }
+                            });
+                        }, 300);
+                    } else {
+                        toastError("Hata", "Klasör silinemedi");
+                    }
                 }
             }
         });

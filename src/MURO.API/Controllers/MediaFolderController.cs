@@ -53,9 +53,16 @@ public class MediaFolderController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteFolder(Guid id)
+    public async Task<IActionResult> DeleteFolder(Guid id, [FromQuery] bool force = false)
     {
-        await _folderService.DeleteFolderAsync(GetTenantId(), id);
-        return NoContent();
+        try
+        {
+            await _folderService.DeleteFolderAsync(GetTenantId(), id, force);
+            return NoContent();
+        }
+        catch (Exception ex) when (ex.Message == "NON_EMPTY_FOLDER")
+        {
+            return BadRequest(new { error = "NON_EMPTY_FOLDER" });
+        }
     }
 }

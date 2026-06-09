@@ -28,8 +28,8 @@ export const updateFolder = async (id: string, data: { name: string; parentFolde
     });
 };
 
-export const deleteFolder = async (id: string): Promise<void> => {
-    return fetchApi(`/media-folders/${id}`, {
+export const deleteFolder = async (id: string, force: boolean = false): Promise<void> => {
+    return fetchApi(`/media-folders/${id}${force ? '?force=true' : ''}`, {
         method: 'DELETE',
     });
 };

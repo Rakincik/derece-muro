@@ -9,5 +9,5 @@ public interface IMediaFolderService
     Task<MediaFolderDto> GetFolderByIdAsync(Guid tenantId, Guid folderId);
     Task<MediaFolderDto> CreateFolderAsync(Guid tenantId, CreateMediaFolderRequest request);
     Task<MediaFolderDto> UpdateFolderAsync(Guid tenantId, Guid folderId, UpdateMediaFolderRequest request);
-    Task DeleteFolderAsync(Guid tenantId, Guid folderId);
+    Task DeleteFolderAsync(Guid tenantId, Guid folderId, bool force = false);
 }
