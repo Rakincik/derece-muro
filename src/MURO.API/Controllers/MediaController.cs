@@ -57,9 +57,10 @@ public class MediaController : ControllerBase
         return Ok(await _mediaService.GetAssignedCourseIdsAsync(GetTenantId(), id));
     }
 
-    // --- Admin assets (açık URL) ---
     [HttpGet("assets")]
     public async Task<ActionResult<PagedResult<MediaAssetDto>>> GetAssets(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 50,
+        [FromQuery] Guid? courseId = null, [FromQuery] Guid? folderId = null)
         => Ok(await _mediaService.GetAssetsAsync(GetTenantId(), page, pageSize, courseId, null, null, folderId, excludeRecordings: true));
 
     [HttpGet("transcode-progress")]
