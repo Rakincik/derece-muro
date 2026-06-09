@@ -146,13 +146,13 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
         return `${s} saniye`;
     };
 
-    const totalDurationSeconds = uploads.reduce((acc, u) => acc + (u.durationSeconds || 0), 0);
+    const totalEtaSeconds = uploads.reduce((acc, u) => acc + (u.etaSeconds || 0), 0);
 
     return (
         <GlobalUploadContext.Provider value={{ uploads, startUpload, removeUpload, clearCompleted }}>
             {children}
             {totalUploadsCount > 0 && (
-                <div className={`fixed bottom-6 right-6 z-[9999] w-[360px] bg-white dark:bg-[#09090B] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${isMinimized ? 'h-[64px]' : 'h-auto max-h-[400px]'}`}>
+                <div className={`fixed bottom-6 right-6 z-[9999] w-[420px] bg-white dark:bg-[#09090B] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${isMinimized ? 'h-[64px]' : 'h-auto max-h-[400px]'}`}>
                     
                     {/* Header */}
                     <div 
@@ -168,7 +168,7 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
                                     {activeUploadsCount > 0 ? `${totalUploadsCount} öğeden ${completedUploadsCount}'si yüklendi` : `${completedUploadsCount} öğe yüklendi`}
                                 </h4>
                                 <p className="text-[11px] text-gray-500 dark:text-[#A0AEC0]">
-                                    {activeUploadsCount > 0 ? `Arka planda yükleniyor... • Toplam Süre: ${formatDuration(totalDurationSeconds)}` : 'Tüm yüklemeler tamamlandı'}
+                                    {activeUploadsCount > 0 ? `Arka planda işleniyor... • Kalan Süre: ${totalEtaSeconds > 0 ? formatEta(totalEtaSeconds) : 'Hesaplanıyor...'}` : 'Tüm yüklemeler tamamlandı'}
                                 </p>
                             </div>
                         </div>
