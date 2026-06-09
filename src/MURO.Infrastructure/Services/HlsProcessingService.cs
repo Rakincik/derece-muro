@@ -116,8 +116,8 @@ public class HlsProcessingService : IHlsProcessingService
             // ── GPU Pipeline: CUDA decode → scale_cuda → NVENC encode (zero-copy, MAX SPEED) ──
             ffmpegArgs = $"-y -hwaccel cuda -hwaccel_output_format cuda -i \"{sourceMp4Path}\" " +
                          $"-filter_complex \"[0:v]scale_cuda=854:480[v1];[0:v]scale_cuda=1280:720[v2]\" " +
-                         $"-map \"[v1]\" -c:v:0 h264_nvenc -preset p1 -rc vbr -cq 28 -b:v:0 0.4M -maxrate:v:0 0.4M -bufsize:v:0 0.8M " +
-                         $"-map \"[v2]\" -c:v:1 h264_nvenc -preset p1 -rc vbr -cq 28 -b:v:1 0.8M -maxrate:v:1 0.8M -bufsize:v:1 1.6M " +
+                         $"-map \"[v1]\" -c:v:0 h264_nvenc -preset p4 -rc vbr -cq 28 -b:v:0 0.25M -maxrate:v:0 0.25M -bufsize:v:0 0.5M " +
+                         $"-map \"[v2]\" -c:v:1 h264_nvenc -preset p4 -rc vbr -cq 28 -b:v:1 0.5M -maxrate:v:1 0.5M -bufsize:v:1 1.0M " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +
                          $"-map a:0 -c:a:1 aac -b:a:1 128k " +
                          $"-f hls -hls_time 6 -hls_playlist_type vod -hls_flags independent_segments " +
@@ -132,8 +132,8 @@ public class HlsProcessingService : IHlsProcessingService
                          $"-i \"{sourceMp4Path}\" " +
                          $"-filter_complex \"[0:v]format=nv12,hwupload=extra_hw_frames=64,split=2[s0][s1];" +
                          $"[s0]scale_qsv=854:480[v1];[s1]scale_qsv=1280:720[v2]\" " +
-                         $"-map \"[v1]\" -c:v:0 h264_qsv -preset medium -rc vbr -b:v:0 0.4M -maxrate:v:0 0.4M -bufsize:v:0 0.8M " +
-                         $"-map \"[v2]\" -c:v:1 h264_qsv -preset medium -rc vbr -b:v:1 0.8M -maxrate:v:1 0.8M -bufsize:v:1 1.6M " +
+                         $"-map \"[v1]\" -c:v:0 h264_qsv -preset medium -rc vbr -b:v:0 0.25M -maxrate:v:0 0.25M -bufsize:v:0 0.5M " +
+                         $"-map \"[v2]\" -c:v:1 h264_qsv -preset medium -rc vbr -b:v:1 0.5M -maxrate:v:1 0.5M -bufsize:v:1 1.0M " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +
                          $"-map a:0 -c:a:1 aac -b:a:1 128k " +
                          $"-f hls -hls_time 6 -hls_playlist_type vod -hls_flags independent_segments " +
@@ -146,8 +146,8 @@ public class HlsProcessingService : IHlsProcessingService
             // ── CPU Pipeline: Software decode → scale → libx264 encode (6 threads, FAST) ──
             ffmpegArgs = $"-y -i \"{sourceMp4Path}\" " +
                          $"-filter_complex \"[0:v]split=2[v480][v720];[v480]scale=854:480[v1];[v720]scale=1280:720[v2]\" " +
-                         $"-map \"[v1]\" -c:v:0 libx264 -preset veryfast -crf 26 -threads 6 -maxrate:v:0 0.6M -bufsize:v:0 1.2M " +
-                         $"-map \"[v2]\" -c:v:1 libx264 -preset veryfast -crf 26 -threads 6 -maxrate:v:1 0.9M -bufsize:v:1 1.8M " +
+                         $"-map \"[v1]\" -c:v:0 libx264 -preset veryfast -crf 28 -threads 6 -maxrate:v:0 0.3M -bufsize:v:0 0.6M " +
+                         $"-map \"[v2]\" -c:v:1 libx264 -preset veryfast -crf 28 -threads 6 -maxrate:v:1 0.6M -bufsize:v:1 1.2M " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +
                          $"-map a:0 -c:a:1 aac -b:a:1 128k " +
                          $"-f hls -hls_time 6 -hls_playlist_type vod -hls_flags independent_segments " +
