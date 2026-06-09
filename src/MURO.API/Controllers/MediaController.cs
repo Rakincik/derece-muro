@@ -64,17 +64,30 @@ public class MediaController : ControllerBase
         => Ok(await _mediaService.GetAssetsAsync(GetTenantId(), page, pageSize, courseId, null, null, folderId, excludeRecordings: true));
 
     [HttpGet("transcode-progress")]
-    public async Task<ActionResult<Dictionary<Guid, MURO.Infrastructure.Services.TranscodeProgress>>> GetTranscodeProgress([FromQuery] string ids, [FromServices] ICacheService cache)
+    public async Task<ActionResult<Dictionary<Guid, object>>> GetTranscodeProgress([FromQuery] string ids, [FromServices] ICacheService cache, [FromServices] MURO.Infrastructure.Persistence.MuroDbContext dbContext)
     {
-        var dict = new Dictionary<Guid, MURO.Infrastructure.Services.TranscodeProgress>();
+        var dict = new Dictionary<Guid, object>();
         if (string.IsNullOrEmpty(ids)) return Ok(dict);
         var idList = ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .Select(id => Guid.TryParse(id, out var g) ? g : Guid.Empty)
                         .Where(g => g != Guid.Empty).ToList();
-        foreach(var id in idList)
+
+        var statuses = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+            System.Linq.Queryable.Select(
+                System.Linq.Queryable.Where(dbContext.MediaAssets, m => idList.Contains(m.Id)),
+                m => new { m.Id, m.Status }
+            )
+        );
+
+        foreach(var stat in statuses)
         {
-            var pr = await cache.GetAsync<MURO.Infrastructure.Services.TranscodeProgress>($"muro:upload:progress:{id}");
-            if (pr != null && pr.Percentage > 0) dict[id] = pr;
+            var pr = await cache.GetAsync<MURO.Infrastructure.Services.TranscodeProgress>($"muro:upload:progress:{stat.Id}");
+            dict[stat.Id] = new {
+                percentage = pr?.Percentage ?? 0,
+                speed = pr?.Speed ?? 0,
+                etaSeconds = pr?.EtaSeconds ?? 0,
+                status = stat.Status.ToString()
+            };
         }
         return Ok(dict);
     }

@@ -65,31 +65,20 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
                 setUploads(prev => prev.map(t => {
                     if (t.assetId && progressDict[t.assetId] !== undefined) {
                         const d: any = progressDict[t.assetId];
-                        return { ...t, transcodeProgress: (d.percentage ?? d.Percentage ?? 0), speed: (d.speed ?? d.Speed ?? 0), etaSeconds: (d.etaSeconds ?? d.EtaSeconds ?? 0) };
+                        const newStatus = d.status === 'Ready' ? 'success' : t.status;
+                        return { 
+                            ...t, 
+                            transcodeProgress: (d.percentage ?? d.Percentage ?? 0), 
+                            speed: (d.speed ?? d.Speed ?? 0), 
+                            etaSeconds: (d.etaSeconds ?? d.EtaSeconds ?? 0),
+                            assetStatus: d.status ?? t.assetStatus,
+                            status: newStatus
+                        };
                     }
                     return t;
                 }));
             } catch (e) {
                 console.error("Failed to fetch transcode progress", e);
-            }
-
-            // Durum kontrolü: Her 10 saniyede bir (2 turda bir), BÜTÜN bekleyen assetlerin durumunu kontrol et
-            if (tick % 2 === 0) {
-                for (const assetId of idsToPoll) {
-                    try {
-                        const asset = await mediaLibraryApi.getAsset(assetId);
-                        setUploads(prev => prev.map(t => {
-                            if (t.assetId === assetId && t.assetStatus !== asset.status) {
-                                return { 
-                                    ...t, 
-                                    assetStatus: asset.status,
-                                    status: asset.status === 'Ready' ? 'success' : t.status
-                                };
-                            }
-                            return t;
-                        }));
-                    } catch (e) { /* sessiz */ }
-                }
             }
         }, 5000);
 
