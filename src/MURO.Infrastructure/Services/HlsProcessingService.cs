@@ -121,7 +121,7 @@ public class HlsProcessingService : IHlsProcessingService
         else if (pipelineType == "qsv")
         {
             // ── QSV Pipeline: Intel iGPU Hardware Decode & Encode ──
-            ffmpegArgs = $"-y -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw -hwaccel qsv -hwaccel_output_format qsv -i \"{sourceMp4Path}\" " +
+            ffmpegArgs = $"-y -hwaccel qsv -hwaccel_output_format qsv -i \"{sourceMp4Path}\" " +
                          $"-filter_complex \"[0:v]vpp_qsv=w=854:h=480[v1];[0:v]vpp_qsv=w=1280:h=720[v2]\" " +
                          $"-map \"[v1]\" -c:v:0 h264_qsv -preset faster -b:v:0 1.2M " +
                          $"-map \"[v2]\" -c:v:1 h264_qsv -preset faster -b:v:1 2.8M " +

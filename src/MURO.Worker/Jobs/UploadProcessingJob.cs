@@ -75,19 +75,16 @@ public class UploadProcessingJob : BackgroundService
             return;
         }
 
-        _logger.LogInformation("{Count} video işlenecek.", pending.Count);
-
-        // ── Hibrit NVENC + QSV + CPU Pipeline ──────────────────────────────────────
-        // 10 video → GPU (NVENC, NVIDIA), 4 video → iGPU (QSV, Intel), 4 video → CPU (libx264)
+        // ── Hibrit NVENC + CPU Pipeline ──────────────────────────────────────
+        // 10 video → GPU (NVENC, NVIDIA), 8 video → CPU (libx264)
+        // QSV iptal edildi (Docker izin sorunları nedeniyle)
         const int nvencSlots = 10;
-        const int qsvSlots   = 4;
-        const int cpuSlots   = 4;
+        const int cpuSlots   = 8;
 
         var nvencBatch = pending.Take(nvencSlots).ToList();
-        var qsvBatch   = pending.Skip(nvencSlots).Take(qsvSlots).ToList();
-        var cpuBatch   = pending.Skip(nvencSlots + qsvSlots).Take(cpuSlots).ToList();
+        var cpuBatch   = pending.Skip(nvencSlots).Take(cpuSlots).ToList();
 
-        _logger.LogInformation("Tri-Pipeline devrede: {NvencCount} NVENC, {QsvCount} QSV, {CpuCount} CPU video işlenecek.", nvencBatch.Count, qsvBatch.Count, cpuBatch.Count);
+        _logger.LogInformation("Dual-Pipeline devrede: {NvencCount} NVENC, {CpuCount} CPU video işlenecek.", nvencBatch.Count, cpuBatch.Count);
 
         var nvencTask = Parallel.ForEachAsync(nvencBatch, new ParallelOptions { MaxDegreeOfParallelism = nvencSlots, CancellationToken = ct }, async (asset, token) =>
         {
@@ -97,16 +94,6 @@ public class UploadProcessingJob : BackgroundService
             var innerHttp = innerScope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
             await ProcessSingleUploadAsync(innerDb, innerHls, innerHttp, asset, "nvenc", token);
-        });
-
-        var qsvTask = Parallel.ForEachAsync(qsvBatch, new ParallelOptions { MaxDegreeOfParallelism = qsvSlots, CancellationToken = ct }, async (asset, token) =>
-        {
-            using var innerScope = _scopeFactory.CreateScope();
-            var innerDb = innerScope.ServiceProvider.GetRequiredService<MuroDbContext>();
-            var innerHls = innerScope.ServiceProvider.GetRequiredService<IHlsProcessingService>();
-            var innerHttp = innerScope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-
-            await ProcessSingleUploadAsync(innerDb, innerHls, innerHttp, asset, "qsv", token);
         });
 
         var cpuTask = Parallel.ForEachAsync(cpuBatch, new ParallelOptions { MaxDegreeOfParallelism = cpuSlots, CancellationToken = ct }, async (asset, token) =>
@@ -119,7 +106,7 @@ public class UploadProcessingJob : BackgroundService
             await ProcessSingleUploadAsync(innerDb, innerHls, innerHttp, asset, "cpu", token);
         });
 
-        await Task.WhenAll(nvencTask, qsvTask, cpuTask);
+        await Task.WhenAll(nvencTask, cpuTask);
     }
 
     private async Task ProcessSingleUploadAsync(
