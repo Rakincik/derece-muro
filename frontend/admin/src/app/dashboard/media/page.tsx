@@ -75,7 +75,28 @@ export default function MediaLibraryPage() {
     const completedCountRef = useRef(0);
     const readyCountRef = useRef(0);
 
-    // Auto-refresh the list when an upload finishes successfully or its processing status changes to Ready
+    const loadDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const a = await mediaLibraryApi.getAssets(currentFolderId || undefined);
+            setAssets(a);
+            setSelectedAssetIds([]);
+        } catch (error) {
+            toastError("Hata", "Veriler yüklenirken bir hata oluştu.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const debouncedLoadData = () => {
+        if (loadDataTimeoutRef.current) clearTimeout(loadDataTimeoutRef.current);
+        loadDataTimeoutRef.current = setTimeout(() => {
+            loadData();
+        }, 300);
+    };
+
     useEffect(() => {
         let shouldReload = false;
         
@@ -96,30 +117,19 @@ export default function MediaLibraryPage() {
         }
 
         if (shouldReload) {
-            loadData();
+            debouncedLoadData();
         }
     }, [uploads]);
 
     useEffect(() => {
-        loadData();
+        debouncedLoadData();
     }, [currentFolderId]);
 
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, currentFolderId, pageSize]);
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const a = await mediaLibraryApi.getAssets(currentFolderId || undefined);
-            setAssets(a);
-            setSelectedAssetIds([]);
-        } catch (error) {
-            toastError("Hata", "Veriler yüklenirken bir hata oluştu.");
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     const triggerTreeRefresh = () => setRefreshTrigger(prev => prev + 1);
 

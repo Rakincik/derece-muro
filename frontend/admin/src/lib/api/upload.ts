@@ -16,20 +16,27 @@ export const uploadApi = {
             xhr.open('PUT', uploadUrl, true);
             
             const startTime = Date.now();
-            
+            let lastProgressTime = 0;
+
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable) {
                     const percentComplete = Math.round((event.loaded / event.total) * 100);
                     
-                    let etaSeconds = 0;
-                    const elapsedMs = Date.now() - startTime;
-                    if (elapsedMs > 500 && event.loaded > 0) {
-                        const bytesPerSec = event.loaded / (elapsedMs / 1000);
-                        const remainingBytes = event.total - event.loaded;
-                        etaSeconds = Math.max(0, Math.round(remainingBytes / bytesPerSec));
+                    const now = Date.now();
+                    // Sadece 100ms'de bir veya %100 olduğunda UI'ı güncelle (Hem akıcı bir bar hem de CPU optimizasyonu için)
+                    if (now - lastProgressTime >= 100 || percentComplete === 100) {
+                        lastProgressTime = now;
+                        
+                        let etaSeconds = 0;
+                        const elapsedMs = now - startTime;
+                        if (elapsedMs > 500 && event.loaded > 0) {
+                            const bytesPerSec = event.loaded / (elapsedMs / 1000);
+                            const remainingBytes = event.total - event.loaded;
+                            etaSeconds = Math.max(0, Math.round(remainingBytes / bytesPerSec));
+                        }
+                        
+                        onProgress(percentComplete, etaSeconds);
                     }
-                    
-                    onProgress(percentComplete, etaSeconds);
                 }
             };
             

@@ -57,7 +57,8 @@ export function GlobalUploadProvider({ children }: { children: ReactNode }) {
         let tick = 0;
         const interval = setInterval(async () => {
             tick++;
-            const idsToPoll = pollingIds.split(',');
+            // Sadece ilk 20 aktif videoyu sorgula (URL sınırını aşmamak ve API'yi boğmamak için)
+            const idsToPoll = pollingIds.split(',').slice(0, 20);
 
             // Her turda SADECE progress (tek toplu istek)
             try {

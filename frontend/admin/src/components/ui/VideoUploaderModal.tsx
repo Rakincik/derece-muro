@@ -107,26 +107,51 @@ export function VideoUploaderModal({ isOpen, onClose, onSuccess, courseId, folde
         }
     };
 
-    const handleFilesSelection = (files: {file: File, customPath?: string}[]) => {
+    const handleFilesSelection = async (files: {file: File, customPath?: string}[]) => {
         const videoFiles = files.filter(f => f.file.type.startsWith('video/'));
         if (videoFiles.length === 0) {
             setError('Lütfen geçerli video dosyaları seçin (MP4, MOV).');
             return;
         }
         
-        videoFiles.forEach(({file, customPath}) => {
-            const id = Math.random().toString(36).substring(7);
-            const title = file.name.replace(/\.[^/.]+$/, "");
-            const relativePath = customPath || file.webkitRelativePath || undefined;
-            
-            const video = document.createElement('video');
-            video.preload = 'metadata';
-            video.onloadedmetadata = () => {
-                window.URL.revokeObjectURL(video.src);
-                setSelectedFiles(prev => [...prev, { id, file, title, durationSeconds: Math.round(video.duration), relativePath }]);
-            };
-            video.src = URL.createObjectURL(file);
-        });
+        setIsPreparing(true); // Dosyalar taranırken yükleniyor ikonu göster
+
+        try {
+            // Bellek sızıntısını ve tarayıcı çökmesini önlemek için videoların süresini sırayla alalım
+            // 5'erli gruplar halinde işleyerek tarayıcı decoder limitlerine takılmaktan kaçınıyoruz.
+            for (let i = 0; i < videoFiles.length; i += 5) {
+                const chunk = videoFiles.slice(i, i + 5);
+                
+                const processPromises = chunk.map(({file, customPath}) => {
+                    return new Promise<SelectedFile>((resolve) => {
+                        const id = Math.random().toString(36).substring(7);
+                        const title = file.name.replace(/\.[^/.]+$/, "");
+                        const relativePath = customPath || file.webkitRelativePath || undefined;
+                        
+                        const video = document.createElement('video');
+                        video.preload = 'metadata';
+                        
+                        // Hata durumunda takılı kalmaması için error handler eklendi
+                        video.onerror = () => {
+                            window.URL.revokeObjectURL(video.src);
+                            resolve({ id, file, title, durationSeconds: 0, relativePath });
+                        };
+                        
+                        video.onloadedmetadata = () => {
+                            window.URL.revokeObjectURL(video.src);
+                            resolve({ id, file, title, durationSeconds: Math.round(video.duration), relativePath });
+                        };
+                        
+                        video.src = URL.createObjectURL(file);
+                    });
+                });
+
+                const results = await Promise.all(processPromises);
+                setSelectedFiles(prev => [...prev, ...results]);
+            }
+        } finally {
+            setIsPreparing(false);
+        }
     };
 
     const removeFile = (id: string) => {
