@@ -10,51 +10,51 @@ services:
   # --- PostgreSQL 16 ---
   postgres:
     image: postgres:16-alpine
-    container_name: muro_postgres
+    container_name: muro101_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-muro_prod}
       POSTGRES_USER: ${DB_USER:-muro_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
-      - muro_pgdata:/var/lib/postgresql/data
+      - muro101_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-muro_user} -d ${DB_NAME:-muro_prod}" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - muro_network
+      - muro101_network
 
   # --- Redis 7 ---
   redis:
     image: redis:7-alpine
-    container_name: muro_redis
+    container_name: muro101_redis
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:-muro_redis_2024}
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:6380:6379"
     volumes:
-      - muro_redisdata:/data
+      - muro101_redisdata:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-muro_redis_2024}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - muro_network
+      - muro101_network
 
   # --- MURO API (.NET 8 + Worker + FFmpeg) ---
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
-    container_name: muro_api
+    container_name: muro101_api
     restart: unless-stopped
     ports:
-      - "5292:5292"
+      - "5293:5292"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5292
@@ -80,21 +80,21 @@ services:
       - /mnt/storage/muro/hls:/app/wwwroot/hls
       - /mnt/storage/muro/podcasts:/app/wwwroot/podcasts
       - /mnt/storage/muro/uploads:/app/wwwroot/uploads
-      - muro_logs:/app/logs
+      - muro101_logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - muro_network
+      - muro101_network
 
   # --- MURO Worker (NVENC FFmpeg) ---
   worker:
     build:
       context: .
       dockerfile: Dockerfile.worker
-    container_name: muro_worker
+    container_name: muro101_worker
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
@@ -107,7 +107,7 @@ services:
     volumes:
       - /mnt/storage/muro/hls:/app/wwwroot/hls
       - /mnt/storage/muro/uploads:/app/wwwroot/uploads
-      - muro_logs:/app/logs
+      - muro101_logs:/app/logs
     devices:
       - /dev/dri:/dev/dri
     depends_on:
@@ -123,7 +123,7 @@ services:
               count: all
               capabilities: [gpu, video]
     networks:
-      - muro_network
+      - muro101_network
 
   # --- Admin Frontend (Next.js) ---
   admin:
@@ -132,16 +132,16 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${SITE_URL:-http://192.168.1.115:5292}/api/v1
-    container_name: muro_admin
+    container_name: muro101_admin
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3003:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
       - HOSTNAME=0.0.0.0
     networks:
-      - muro_network
+      - muro101_network
 
   # --- Student Frontend (Next.js) ---
   student:
@@ -150,25 +150,25 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${SITE_URL:-https://yourdomain.com}/api/v1
-    container_name: muro_student
+    container_name: muro101_student
     restart: unless-stopped
     ports:
-      - "3002:3002"
+      - "3004:3002"
     environment:
       - NODE_ENV=production
       - PORT=3002
       - HOSTNAME=0.0.0.0
     networks:
-      - muro_network
+      - muro101_network
 
 volumes:
-  muro_pgdata:
+  muro101_pgdata:
     driver: local
-  muro_redisdata:
+  muro101_redisdata:
     driver: local
-  muro_logs:
+  muro101_logs:
     driver: local
 
 networks:
-  muro_network:
+  muro101_network:
     driver: bridge
