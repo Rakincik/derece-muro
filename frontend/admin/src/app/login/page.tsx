@@ -65,14 +65,10 @@ export default function AdminLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img 
-            src="/monopol_logo.png" 
+            src="/admin/monopol_logo.png" 
             alt={brandName} 
-            className="w-48 h-auto mx-auto mb-4 object-contain drop-shadow-lg" 
+            className="w-64 h-auto mx-auto object-contain drop-shadow-lg" 
           />
-          <h1 className="text-base font-bold bg-gradient-to-r from-[#A0AEC0] via-[#E2E8F0] to-[#A9A9A9] bg-clip-text text-transparent">
-            {brandName}
-          </h1>
-          <p className="text-[#A0AEC0] text-xs mt-2">Yönetim Paneli</p>
         </div>
 
         {/* Card */}

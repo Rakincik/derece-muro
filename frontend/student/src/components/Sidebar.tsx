@@ -87,16 +87,12 @@ export default function Sidebar({ isOpen }: { isOpen?: boolean }) {
             style={isOpen ? { transform: 'translateX(0)' } : undefined}
         >
             {/* Logo + Tenant */}
-            <div className="px-6 py-7 flex items-center gap-3">
+            <div className="px-6 py-7 flex items-center justify-center relative">
                 <img 
                     src="/monopol_logo.png" 
                     alt={brandName} 
-                    className="w-10 h-10 rounded-2xl object-contain border border-[#A0AEC0]/20 shadow-xl flex-shrink-0" 
+                    className="w-36 h-auto object-contain drop-shadow-md" 
                 />
-                <div className="flex-1 min-w-0">
-                    <h1 className="text-[15px] font-bold text-white tracking-tight truncate">{brandName}</h1>
-                    <p className="text-[11px] text-[#A9A9A9] font-medium truncate">{tenantName}</p>
-                </div>
             </div>
 
             {/* Nav */}
