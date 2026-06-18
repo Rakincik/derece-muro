@@ -53,6 +53,7 @@ interface MappedSession {
     id: string; title: string; date: string; time: string; duration: string;
     status: "scheduled" | "live" | "ended"; attendees: number; hasRecording: boolean;
     scheduledStart?: string; durationMinutes?: number; recordingEnabled?: boolean;
+    videoUrl?: string;
 }
 
 interface CourseGroup { id: string; name: string; mode: string; }
@@ -87,6 +88,7 @@ const mapSession = (s: SessionDto): MappedSession => ({
     scheduledStart: s.scheduledStart ?? undefined,
     durationMinutes: s.durationMinutes ?? undefined,
     recordingEnabled: s.recordingEnabled,
+    videoUrl: s.videoUrl ?? undefined,
 });
 
 const getFileUrl = (path: string | null) => {
@@ -327,11 +329,12 @@ export default function CoursesPage() {
     }, [token, tenantId, detail]);
 
     // ── Quick Start: Create session with topic + immediately start BBB ────────
-    const handleQuickStart = useCallback(async (courseId: string, topic: string) => {
+    const handleQuickStart = useCallback(async (courseId: string, topic: string, videoUrl?: string) => {
         if (!token || !tenantId || !topic.trim()) return;
         
         // Tarayıcının pop-up engelleyicisine takılmamak için yeni sekmeyi asenkron işlemden ÖNCE açıyoruz
-        const newTab = window.open("about:blank", "_blank");
+        // Sadece BigBlueButton derslerinde (yani videoUrl yoksa) sekme açacağız!
+        const newTab = !videoUrl ? window.open("about:blank", "_blank") : null;
         
         setActionLoading("quickstart");
         try {
@@ -344,18 +347,33 @@ export default function CoursesPage() {
                 durationMinutes: 60,
                 recordingEnabled: true,
             });
-            // 2. Start the session immediately
-            const result = await sessionApi.start(token, tenantId, courseId, s.id);
-            
-            // Açtığımız sekmeyi şimdi BBB URL'sine yönlendiriyoruz
-            if (newTab) {
-                newTab.location.href = result.moderatorJoinUrl;
-            } else {
-                // Eğer her şeye rağmen engellendiyse (veya newTab null dönerse) mevcut sayfada aç
-                window.location.href = result.moderatorJoinUrl;
+
+            // 2. If videoUrl is provided, update the session with videoUrl
+            if (videoUrl && videoUrl.trim()) {
+                await courseApi.updateSession(token, tenantId, courseId, s.id, {
+                    title: sessionTitle,
+                    videoUrl: videoUrl.trim(),
+                });
+                s.videoUrl = videoUrl.trim();
             }
             
-            // 3. Update local state
+            // 3. Start the session immediately
+            const result = await sessionApi.start(token, tenantId, courseId, s.id);
+            
+            if (!videoUrl) {
+                // Açtığımız sekmeyi şimdi BBB URL'sine yönlendiriyoruz
+                if (newTab) {
+                    newTab.location.href = result.moderatorJoinUrl;
+                } else {
+                    // Eğer her şeye rağmen engellendiyse (veya newTab null dönerse) mevcut sayfada aç
+                    window.location.href = result.moderatorJoinUrl;
+                }
+            } else {
+                // Harici Canlı Yayın linki ise, yeni sekmede açalım
+                window.open(videoUrl.trim(), "_blank");
+            }
+            
+            // 4. Update local state
             const ns = mapSession({ ...s, status: "Live" });
             setCourses(prev => prev.map(c => c.id === courseId ? { ...c, sessionCount: c.sessionCount + 1, sessions: [...c.sessions, ns] } : c));
             if (detail?.id === courseId) setDetail(prev => prev ? { ...prev, sessionCount: prev.sessionCount + 1, sessions: [...prev.sessions, ns] } : null);
@@ -454,10 +472,20 @@ export default function CoursesPage() {
                                     <p className="text-[8px] md:text-[9px] font-bold text-white/40 uppercase tracking-widest">Kayıtlı Grup</p>
                                 </div>
                             </div>
-                            <button onClick={() => setLiveStartModal({ courseId: c.id, courseName: c.title })} 
-                                className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl md:rounded-[1.25rem] hover:from-red-600 hover:to-rose-700 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(239,68,68,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 animate-pulse-slow border border-red-400/30">
-                                <Radio size={16} className="animate-pulse" /> CANLI DERS BAŞLAT
-                            </button>
+                            {(() => {
+                                const liveSession = c.sessions.find(s => s.status === "live");
+                                return liveSession ? (
+                                    <button onClick={() => handleEndSession(c.id, liveSession.id)} 
+                                        className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-[#E50914] text-white rounded-xl md:rounded-[1.25rem] hover:bg-red-700 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(229,9,20,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 border border-red-500/30">
+                                        <StopCircle size={16} className="animate-pulse" /> DERSİ SONLANDIR
+                                    </button>
+                                ) : (
+                                    <button onClick={() => setLiveStartModal({ courseId: c.id, courseName: c.title })} 
+                                        className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl md:rounded-[1.25rem] hover:from-red-600 hover:to-rose-700 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(239,68,68,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 animate-pulse-slow border border-red-400/30">
+                                        <Radio size={16} className="animate-pulse" /> CANLI DERS BAŞLAT
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -532,8 +560,12 @@ export default function CoursesPage() {
                             <CourseMediaTab 
                                 courseId={detail.id} 
                                 recordings={recordings} 
+                                sessions={detail.sessions}
                                 onViewAttendance={handleViewAttendance}
                                 onPlay={(title, url, type) => setPreviewVideo({ title, url, type })}
+                                onRefreshDetail={async () => {
+                                    if (detail) openDetail(detail, "recordings");
+                                }}
                             />
                         )}
 
@@ -1382,9 +1414,10 @@ function LiveStartModal({
     topic: string; 
     setTopic: (t: string) => void; 
     onClose: () => void; 
-    onStart: (id: string, t: string) => void; 
+    onStart: (id: string, topic: string, videoUrl: string) => void; 
     loading: boolean; 
 }) {
+    const [videoUrl, setVideoUrl] = useState("");
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
@@ -1396,15 +1429,23 @@ function LiveStartModal({
                     </div>
                     <button onClick={onClose} className="p-2 text-[#A0AEC0] hover:text-[#0A1931] hover:bg-[#E2E8F0]/50 rounded-xl transition-all"><X size={20} /></button>
                 </div>
-                <div className="p-6">
-                    <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5">Ders Konusu <span className="text-red-500">*</span></label>
-                    <input type="text" value={topic} onChange={e => setTopic(e.target.value)} autoFocus placeholder="Örn: Limit ve Süreklilik Soru Çözümü"
-                        className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0A1931]/5 focus:border-[#A0AEC0] transition-all" />
-                    <p className="text-[10px] text-[#A0AEC0] mt-2">Dersin konusu aynı zamanda ders kaydının da ismi olacaktır.</p>
+                <div className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5">Ders Konusu <span className="text-red-500">*</span></label>
+                        <input type="text" value={topic} onChange={e => setTopic(e.target.value)} autoFocus placeholder="Örn: Limit ve Süreklilik Soru Çözümü"
+                            className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0A1931]/5 focus:border-[#A0AEC0] transition-all" />
+                        <p className="text-[10px] text-[#A0AEC0] mt-2">Dersin konusu aynı zamanda ders kaydının da ismi olacaktır.</p>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5">Canlı Yayın Linki <span className="text-gray-400">(İsteğe Bağlı)</span></label>
+                        <input type="text" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="Örn: https://youtube.com/live/... veya Zoom vb."
+                            className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0A1931]/5 focus:border-[#A0AEC0] transition-all" />
+                        <p className="text-[10px] text-[#A0AEC0] mt-2">Öğrencilerin harici platformlar (YouTube, Zoom vb.) üzerinden katılması için link ekleyebilirsiniz.</p>
+                    </div>
                 </div>
                 <div className="p-6 pt-0 flex gap-3">
                     <button onClick={onClose} className="flex-1 py-3 text-sm font-bold text-[#A9A9A9] hover:bg-[#E2E8F0]/40 rounded-xl transition-all">İptal</button>
-                    <button onClick={() => onStart(modal.courseId, topic)} disabled={!topic.trim() || loading}
+                    <button onClick={() => onStart(modal.courseId, topic, videoUrl)} disabled={!topic.trim() || loading}
                         className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />} Canlı Dersi Başlat
                     </button>

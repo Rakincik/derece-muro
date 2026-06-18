@@ -88,14 +88,11 @@ export default function Sidebar({ isOpen }: { isOpen?: boolean }) {
         >
             {/* Logo + Tenant */}
             <div className="px-6 py-7 flex items-center gap-3">
-                {branding?.logoUrl ? (
-                    <img src={branding.logoUrl} alt={brandName} className="w-10 h-10 rounded-2xl object-cover border border-[#A0AEC0]/20 shadow-xl flex-shrink-0" />
-                ) : (
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-lg border border-[#A0AEC0]/20 shadow-xl flex-shrink-0"
-                        style={{ backgroundColor: primaryColor }}>
-                        {brandInitial}
-                    </div>
-                )}
+                <img 
+                    src="/monopol_logo.png" 
+                    alt={brandName} 
+                    className="w-10 h-10 rounded-2xl object-contain border border-[#A0AEC0]/20 shadow-xl flex-shrink-0" 
+                />
                 <div className="flex-1 min-w-0">
                     <h1 className="text-[15px] font-bold text-white tracking-tight truncate">{brandName}</h1>
                     <p className="text-[11px] text-[#A9A9A9] font-medium truncate">{tenantName}</p>

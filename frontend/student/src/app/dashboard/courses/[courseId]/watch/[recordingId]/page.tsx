@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { sessionRecordingApi, videoApi, type RecordingDto, type VideoNoteDto } from "@/lib/api";
+import { courseApi, sessionRecordingApi, videoApi, getFileUrl, getVideoPlaybackDetails, type RecordingDto, type VideoNoteDto, type CourseMediaDto } from "@/lib/api";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { PremiumPlayer } from "@/components/video/PremiumPlayer";
@@ -100,11 +100,34 @@ export default function WatchPage() {
                 if (courseData) setCourseTitle(courseData.title || "");
 
                 const recs = await sessionRecordingApi.list(token, tenantId).catch(() => []);
+                const courseMedias = await courseApi.getCourseMedias(token, tenantId, courseId).catch(() => []);
                 const sessions = courseData?.sessions ?? [];
 
-                const courseRecs = recs
-                    .filter((r: RecordingDto) => sessions.some((s: { id: string }) => s.id === r.sessionId) && r.status === "Ready")
-                    .sort((a: RecordingDto, b: RecordingDto) => new Date(a.scheduledStart || a.createdAt).getTime() - new Date(b.scheduledStart || b.createdAt).getTime());
+                const typedRecs = recs as RecordingDto[];
+
+                const courseRecs: RecordingDto[] = courseMedias
+                    .filter((cm: CourseMediaDto) => cm.type !== "Exam")
+                    .map((cm: CourseMediaDto) => {
+                        const matchRec = typedRecs.find(r => r.sessionId === cm.sessionId);
+                        const matchSession = sessions.find(s => s.id === cm.sessionId);
+                        return {
+                            id: cm.id,
+                            sessionId: cm.sessionId || cm.id,
+                            sessionTitle: cm.mediaAsset?.title || cm.sessionTitle || cm.examTitle || 'İçerik',
+                            courseId: cm.courseId,
+                            courseTitle: courseData?.title || '',
+                            playbackUrl: matchRec?.playbackUrl || '',
+                            hlsPath: cm.mediaAsset?.hlsPath,
+                            thumbnailPath: cm.mediaAsset?.thumbnailPath,
+                            durationSeconds: cm.mediaAsset?.durationSeconds || matchRec?.durationSeconds || 0,
+                            participantsCount: 0,
+                            status: "Ready",
+                            createdAt: cm.createdAt,
+                            scheduledStart: cm.sessionScheduledStart || undefined,
+                            type: cm.type === 'Video' || cm.mediaAsset?.hlsPath ? 'Video' : 'Recording',
+                            videoUrl: matchSession?.videoUrl || null
+                        };
+                    });
 
                 setAllRecordings(courseRecs);
 
@@ -237,6 +260,27 @@ export default function WatchPage() {
                     {/* Video Player */}
                     <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden select-none">
                         {(() => {
+                            if (currentRec?.videoUrl) {
+                                const details = getVideoPlaybackDetails(currentRec.videoUrl);
+                                if (details.type === "iframe") {
+                                    return (
+                                        <iframe 
+                                            src={details.url} 
+                                            className="w-full h-full border-0 absolute inset-0"
+                                            allowFullScreen
+                                            allow="autoplay; fullscreen"
+                                        />
+                                    );
+                                } else {
+                                    return (
+                                        <PremiumPlayer 
+                                            src={details.url} 
+                                            poster={currentRec?.thumbnailPath ? getFileUrl(currentRec.thumbnailPath) : undefined}
+                                            autoplay={true} 
+                                        />
+                                    );
+                                }
+                            }
                             const src = currentRec?.hlsPath || currentRec?.playbackUrl;
                             if (!src) return null;
                             
@@ -255,7 +299,7 @@ export default function WatchPage() {
                             return (
                                 <PremiumPlayer 
                                     src={src} 
-                                    poster={currentRec?.thumbnailPath}
+                                    poster={currentRec?.thumbnailPath ? getFileUrl(currentRec.thumbnailPath) : undefined}
                                     autoplay={true} 
                                 />
                             );

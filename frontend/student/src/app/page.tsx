@@ -102,14 +102,11 @@ export default function StudentLoginPage() {
 
         {/* Logo — tenant branding */}
         <div className="text-center mb-8">
-          {branding?.logoUrl ? (
-            <img src={branding.logoUrl} alt={brandName} className="w-16 h-16 rounded-2xl object-cover mx-auto mb-4 shadow-2xl shadow-[#0A1931]/40" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-[#0A1931]/40"
-              style={{ background: `linear-gradient(135deg, ${primaryColor}, #0A1931)` }}>
-              <span className="text-white font-black text-2xl">{brandInitial}</span>
-            </div>
-          )}
+          <img 
+            src="/monopol_logo.png" 
+            alt={brandName} 
+            className="w-16 h-16 rounded-2xl object-contain mx-auto mb-4 shadow-2xl shadow-[#0A1931]/40" 
+          />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#A0AEC0] via-[#E2E8F0] to-[#A9A9A9] bg-clip-text text-transparent">
             {brandName}
           </h1>

@@ -113,14 +113,14 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose
             <aside className={`w-[260px] flex flex-col h-screen fixed left-0 top-0 z-50 border-r border-[#1B3B6F]/20 bg-[#0A1931] transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Logo + Bell */}
                 <div className="px-6 py-7 flex items-center gap-3 relative">
-                    {branding?.logoUrl ? (
-                        <Image src={branding.logoUrl} alt={brandName} width={40} height={40} className="w-10 h-10 rounded-2xl object-cover border border-[#A0AEC0]/20 shadow-xl" priority />
-                    ) : (
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-lg border border-[#A0AEC0]/20 shadow-xl"
-                            style={{ backgroundColor: primaryColor }}>
-                            {brandInitial}
-                        </div>
-                    )}
+                    <Image 
+                        src="/monopol_logo.png" 
+                        alt={brandName} 
+                        width={40} 
+                        height={40} 
+                        className="w-10 h-10 rounded-2xl object-contain border border-[#A0AEC0]/20 shadow-xl" 
+                        priority 
+                    />
                     <div className="flex-1 min-w-0">
                         <h1 className="text-[15px] font-bold text-white tracking-tight truncate">{brandName}</h1>
                         <p className="text-[11px] text-[#A9A9A9] font-medium truncate">Admin Panel</p>

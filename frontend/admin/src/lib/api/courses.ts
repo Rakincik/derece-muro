@@ -80,6 +80,7 @@ export const courseApi = {
     updateSession: (token: string, tenantId: string, courseId: string, sessionId: string, data: {
         title?: string; description?: string; scheduledStart?: string; scheduledEnd?: string;
         durationMinutes?: number; recordingEnabled?: boolean; order?: number; isFree?: boolean;
+        videoUrl?: string;
     }) =>
         api<SessionDto>(`/courses/${courseId}/sessions/${sessionId}`, { method: "PUT", token, tenantId, body: JSON.stringify(data) }),
 

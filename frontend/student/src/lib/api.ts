@@ -280,6 +280,33 @@ export const authApi = {
         api<AuthResponse>("/auth/refresh", { method: "POST", body: JSON.stringify({ refreshToken }) }),
 };
 
+export function getVideoPlaybackDetails(url: string) {
+    if (!url) return { url: "", type: "video" as const };
+    
+    // YouTube
+    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const ytMatch = url.match(ytRegex);
+    if (ytMatch && ytMatch[1]) {
+        return { url: `https://www.youtube.com/embed/${ytMatch[1]}`, type: "iframe" as const };
+    }
+    
+    // Vimeo
+    const vimeoRegex = /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/;
+    const vimeoMatch = url.match(vimeoRegex);
+    if (vimeoMatch && vimeoMatch[1]) {
+        return { url: `https://player.vimeo.com/video/${vimeoMatch[1]}`, type: "iframe" as const };
+    }
+    
+    // If it is already an iframe embed URL
+    if (url.includes("youtube.com/embed/") || url.includes("player.vimeo.com/video/")) {
+        return { url, type: "iframe" as const };
+    }
+    
+    // Standard video
+    const isHls = url.includes(".m3u8") || url.includes("/hls/");
+    return { url, type: (isHls ? "video" : "iframe") as const };
+}
+
 export interface RecordingDto {
     id: string;
     sessionId: string;
@@ -294,6 +321,7 @@ export interface RecordingDto {
     createdAt: string;
     type?: string;
     examId?: string;
+    videoUrl?: string | null;
 }
 
 export interface CourseMediaDto {

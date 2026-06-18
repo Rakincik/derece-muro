@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { API_URL } from "@/lib/api/core";
-import { mediaLibraryApi, type CourseMediaDto } from "@/lib/api";
+import { mediaLibraryApi, courseApi, type CourseMediaDto } from "@/lib/api";
 import { GripVertical, Plus, Trash2, Video, Play, Users, Check, X, Edit2, Loader2, FileText, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,15 +9,47 @@ import { useToast } from "@/components/toast";
 import { LibrarySelectorModal } from "@/components/ui/LibrarySelectorModal";
 import { ExamSelectorModal } from "@/components/ui/ExamSelectorModal";
 
+export function getVideoPlaybackDetails(url: string) {
+    if (!url) return { url: "", type: "video" as const };
+    
+    // YouTube
+    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const ytMatch = url.match(ytRegex);
+    if (ytMatch && ytMatch[1]) {
+        return { url: `https://www.youtube.com/embed/${ytMatch[1]}`, type: "iframe" as const };
+    }
+    
+    // Vimeo
+    const vimeoRegex = /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/;
+    const vimeoMatch = url.match(vimeoRegex);
+    if (vimeoMatch && vimeoMatch[1]) {
+        return { url: `https://player.vimeo.com/video/${vimeoMatch[1]}`, type: "iframe" as const };
+    }
+    
+    // If it is already an iframe embed URL
+    if (url.includes("youtube.com/embed/") || url.includes("player.vimeo.com/video/")) {
+        return { url, type: "iframe" as const };
+    }
+    
+    // Standard video
+    const isHls = url.includes(".m3u8") || url.includes("/hls/");
+    return { url, type: (isHls ? "video" : "iframe") as const };
+}
+
 export function CourseMediaTab({ 
     courseId, 
     recordings = [], 
+    sessions = [],
     onViewAttendance,
-    onPlay 
+    onPlay,
+    onRefreshDetail
 }: { 
     courseId: string;
     recordings?: any[];
+    sessions?: any[];
     onViewAttendance?: (sessionId: string) => void;
+    onPlay?: (title: string, url: string, type: "video" | "iframe") => void;
+    onRefreshDetail?: () => Promise<void>;
 }) {
     const { user, currentTenantId } = useAuth();
     const { success, error: toastError } = useToast();
@@ -36,6 +68,7 @@ export function CourseMediaTab({
     // Inline edit states
     const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState("");
+    const [editingVideoUrl, setEditingVideoUrl] = useState("");
     const [isSavingEdit, setIsSavingEdit] = useState(false);
 
     const [filter, setFilter] = useState<'all' | 'video' | 'recording'>('all');
@@ -77,6 +110,28 @@ export function CourseMediaTab({
             success("Başlık başarıyla güncellendi.");
         } catch {
             toastError("Hata", "Başlık güncellenemedi.");
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
+    const handleSaveSessionEdit = async (sessionId: string) => {
+        if (!editingTitle.trim()) return;
+        setIsSavingEdit(true);
+        try {
+            const token = typeof window !== "undefined" ? localStorage.getItem("muro_token") : null;
+            await courseApi.updateSession(token || "", currentTenantId || "", courseId, sessionId, {
+                title: editingTitle,
+                videoUrl: editingVideoUrl.trim() || ""
+            });
+            setMedias(prev => prev.map(m => m.sessionId === sessionId ? { ...m, sessionTitle: editingTitle } : m));
+            setEditingMediaId(null);
+            success("Ders oturumu başarıyla güncellendi.");
+            if (onRefreshDetail) {
+                await onRefreshDetail();
+            }
+        } catch {
+            toastError("Hata", "Oturum güncellenemedi.");
         } finally {
             setIsSavingEdit(false);
         }
@@ -388,7 +443,9 @@ export function CourseMediaTab({
                                     </button>
                                 ) : media.type === "Session" ? (() => {
                                     const rec = recordings.find(r => r.sessionId === media.sessionId && (r.playbackUrl || r.hlsPath));
-                                    const canPlay = !!rec;
+                                    const sess = sessions.find(s => s.id === media.sessionId);
+                                    const videoUrl = sess?.videoUrl;
+                                    const canPlay = !!rec || !!videoUrl;
                                     return (
                                         <button 
                                             disabled={!canPlay}
@@ -397,15 +454,25 @@ export function CourseMediaTab({
                                                 if (activeVideo?.id === media.id) {
                                                     setActiveVideo(null);
                                                 } else {
-                                                    const url = rec.hlsPath || rec.playbackUrl;
-                                                    if (url) {
-                                                        setActiveVideo({ 
-                                                            id: media.id, 
+                                                    if (videoUrl) {
+                                                        const details = getVideoPlaybackDetails(videoUrl);
+                                                        setActiveVideo({
+                                                            id: media.id,
                                                             title: media.sessionTitle || "Canlı Ders Kaydı",
-                                                            url, 
-                                                            type: rec.hlsPath ? "video" : "iframe",
-                                                            vttPath: rec.thumbnailPath || undefined
+                                                            url: details.url,
+                                                            type: details.type
                                                         });
+                                                    } else if (rec) {
+                                                        const url = rec.hlsPath || rec.playbackUrl;
+                                                        if (url) {
+                                                            setActiveVideo({ 
+                                                                id: media.id, 
+                                                                title: media.sessionTitle || "Canlı Ders Kaydı",
+                                                                url, 
+                                                                type: rec.hlsPath ? "video" : "iframe",
+                                                                vttPath: rec.thumbnailPath || undefined
+                                                            });
+                                                        }
                                                     }
                                                 }
                                             }}
@@ -442,28 +509,64 @@ export function CourseMediaTab({
                                 
                                 {editingMediaId === media.id ? (
                                     <div className="flex-1 min-w-0 pr-4 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                                        <div className="flex items-center gap-2">
-                                            <input 
-                                                type="text" 
-                                                value={editingTitle} 
-                                                onChange={(e) => setEditingTitle(e.target.value)}
-                                                className="w-full bg-[#F8FAFC] border-2 border-[#1B3B6F]/20 rounded-xl px-3 py-2 text-sm font-bold text-[#0A1931] focus:outline-none focus:border-[#1B3B6F] focus:ring-4 focus:ring-[#1B3B6F]/10 transition-all"
-                                                autoFocus
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        if (media.mediaAssetId) handleSaveEdit(media.mediaAssetId);
-                                                    }
-                                                    if (e.key === 'Escape') setEditingMediaId(null);
-                                                }}
-                                                disabled={isSavingEdit}
-                                            />
-                                            <button onClick={() => media.mediaAssetId && handleSaveEdit(media.mediaAssetId)} disabled={isSavingEdit} className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl shrink-0 transition-colors">
-                                                {isSavingEdit ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-                                            </button>
-                                            <button onClick={() => setEditingMediaId(null)} disabled={isSavingEdit} className="p-2 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded-xl shrink-0 transition-colors">
-                                                <X size={18} />
-                                            </button>
-                                        </div>
+                                        {media.type === "Session" ? (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Ders Başlığı"
+                                                        value={editingTitle} 
+                                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                                        className="w-full bg-[#F8FAFC] border-2 border-[#1B3B6F]/20 rounded-xl px-3 py-2 text-sm font-bold text-[#0A1931] focus:outline-none focus:border-[#1B3B6F] focus:ring-4 focus:ring-[#1B3B6F]/10 transition-all"
+                                                        autoFocus
+                                                        disabled={isSavingEdit}
+                                                    />
+                                                    <button onClick={() => media.sessionId && handleSaveSessionEdit(media.sessionId)} disabled={isSavingEdit} className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl shrink-0 transition-colors">
+                                                        {isSavingEdit ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                                                    </button>
+                                                    <button onClick={() => setEditingMediaId(null)} disabled={isSavingEdit} className="p-2 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded-xl shrink-0 transition-colors">
+                                                        <X size={18} />
+                                                    </button>
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Video URL (YouTube/Vimeo/HLS vb.)"
+                                                    value={editingVideoUrl} 
+                                                    onChange={(e) => setEditingVideoUrl(e.target.value)}
+                                                    className="w-full bg-[#F8FAFC] border-2 border-[#1B3B6F]/20 rounded-xl px-3 py-2 text-sm font-bold text-[#0A1931] focus:outline-none focus:border-[#1B3B6F] focus:ring-4 focus:ring-[#1B3B6F]/10 transition-all"
+                                                    disabled={isSavingEdit}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            if (media.sessionId) handleSaveSessionEdit(media.sessionId);
+                                                        }
+                                                        if (e.key === 'Escape') setEditingMediaId(null);
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="text" 
+                                                    value={editingTitle} 
+                                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                                    className="w-full bg-[#F8FAFC] border-2 border-[#1B3B6F]/20 rounded-xl px-3 py-2 text-sm font-bold text-[#0A1931] focus:outline-none focus:border-[#1B3B6F] focus:ring-4 focus:ring-[#1B3B6F]/10 transition-all"
+                                                    autoFocus
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            if (media.mediaAssetId) handleSaveEdit(media.mediaAssetId);
+                                                        }
+                                                        if (e.key === 'Escape') setEditingMediaId(null);
+                                                    }}
+                                                    disabled={isSavingEdit}
+                                                />
+                                                <button onClick={() => media.mediaAssetId && handleSaveEdit(media.mediaAssetId)} disabled={isSavingEdit} className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl shrink-0 transition-colors">
+                                                    {isSavingEdit ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                                                </button>
+                                                <button onClick={() => setEditingMediaId(null)} disabled={isSavingEdit} className="p-2 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded-xl shrink-0 transition-colors">
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="flex-1 min-w-0">
@@ -512,7 +615,7 @@ export function CourseMediaTab({
                                                 </span>
                                                 <div className="flex items-center gap-1 shrink-0">
                                                     <button 
-                                                        onClick={() => removeItemFromCourse(media.id)}
+                                                        onClick={() => confirmInlineRemove(media.id)}
                                                         className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
                                                     >
                                                         Onayla
@@ -528,28 +631,43 @@ export function CourseMediaTab({
                                         ) : (
                                             <>
                                                 {media.type === "Media" && media.mediaAssetId && (
-                                                    <>
-                                                        <Link
-                                                            href="/dashboard/media"
-                                                            target="_blank"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="p-3 text-[#A0AEC0] hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                                            title="Kütüphanede Göster"
-                                                        >
-                                                            <ExternalLink size={18} />
-                                                        </Link>
-                                                        <button 
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setEditingTitle(media.mediaAsset?.title || "");
-                                                                setEditingMediaId(media.id);
-                                                            }}
-                                                            className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                                                            title="Başlığı Düzenle"
-                                                        >
-                                                            <Edit2 size={18} />
-                                                        </button>
-                                                    </>
+                                                    <Link
+                                                        href="/dashboard/media"
+                                                        target="_blank"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="p-3 text-[#A0AEC0] hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                        title="Kütüphanede Göster"
+                                                    >
+                                                        <ExternalLink size={18} />
+                                                    </Link>
+                                                )}
+                                                {media.type === "Media" && media.mediaAssetId && (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingTitle(media.mediaAsset?.title || "");
+                                                            setEditingMediaId(media.id);
+                                                        }}
+                                                        className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                        title="Başlığı Düzenle"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                )}
+                                                {media.type === "Session" && media.sessionId && (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingTitle(media.sessionTitle || "");
+                                                            const sess = sessions.find(s => s.id === media.sessionId);
+                                                            setEditingVideoUrl(sess?.videoUrl || "");
+                                                            setEditingMediaId(media.id);
+                                                        }}
+                                                        className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                        title="Dersi Düzenle"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
                                                 )}
                                                 <button 
                                                     onClick={(e) => {

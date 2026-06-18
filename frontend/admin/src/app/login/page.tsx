@@ -64,21 +64,14 @@ export default function AdminLoginPage() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          {branding?.logoUrl ? (
-            <Image 
-              src={branding.logoUrl} 
-              alt={brandName} 
-              width={80} 
-              height={80} 
-              className="w-20 h-20 rounded-2xl mx-auto mb-4 object-contain shadow-2xl shadow-[#0A1931]/40" 
-              priority 
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-[#0A1931]/40"
-              style={{ background: branding?.primaryColor ? branding.primaryColor : "linear-gradient(135deg, #1B3B6F, #0A1931)" }}>
-              <span className="text-white font-black text-2xl">{brandInitial}</span>
-            </div>
-          )}
+          <Image 
+            src="/monopol_logo.png" 
+            alt={brandName} 
+            width={80} 
+            height={80} 
+            className="w-20 h-20 rounded-2xl mx-auto mb-4 object-contain shadow-2xl shadow-[#0A1931]/40" 
+            priority 
+          />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#A0AEC0] via-[#E2E8F0] to-[#A9A9A9] bg-clip-text text-transparent">
             {brandName}
           </h1>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { courseApi, mediaApi, sessionRecordingApi, videoApi, getFileUrl, getDownloadUrl, type SessionDto, type CourseDto, type MediaAssetDto, type RecordingDto, type VideoNoteDto, type CourseMaterialDto, type CourseMediaDto } from "@/lib/api";
+import { courseApi, mediaApi, sessionRecordingApi, videoApi, getFileUrl, getDownloadUrl, getVideoPlaybackDetails, type SessionDto, type CourseDto, type MediaAssetDto, type RecordingDto, type VideoNoteDto, type CourseMaterialDto, type CourseMediaDto } from "@/lib/api";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -153,6 +153,7 @@ export default function CourseDetailPage() {
                 // Map CourseMediaDto to RecordingDto for the player and sidebar
                 const mappedRecordings: RecordingDto[] = courseMedias.map((cm: CourseMediaDto) => {
                     const matchRec = typedRecs.find(r => r.sessionId === cm.sessionId);
+                    const matchSession = sess.find(s => s.id === cm.sessionId);
                     return {
                         id: cm.id, // Using CourseMedia ID as the unique key
                         sessionId: cm.sessionId || cm.id,
@@ -168,7 +169,8 @@ export default function CourseDetailPage() {
                         createdAt: cm.createdAt,
                         scheduledStart: cm.sessionScheduledStart || undefined,
                         type: cm.examId ? 'Exam' : (cm.type === 'Video' || cm.mediaAsset?.hlsPath ? 'Video' : 'Recording'),
-                        examId: cm.examId || undefined
+                        examId: cm.examId || undefined,
+                        videoUrl: matchSession?.videoUrl || null
                     };
                 });
                 
@@ -182,6 +184,10 @@ export default function CourseDetailPage() {
 
     const handleJoin = async (session: SessionDto) => {
         if (!token || !tenantId) return;
+        if (session.videoUrl) {
+            await openUrl(session.videoUrl);
+            return;
+        }
         setJoiningId(session.id);
         try {
             const res = await courseApi.joinSession(token, tenantId, courseId, session.id);
@@ -378,6 +384,31 @@ export default function CourseDetailPage() {
                                             </div>
                                         </div>
                                     ) : (() => {
+                                        if (activeRec.videoUrl) {
+                                            const details = getVideoPlaybackDetails(activeRec.videoUrl);
+                                            if (details.type === "iframe") {
+                                                return (
+                                                    <iframe
+                                                        key={activeRec.id}
+                                                        src={details.url}
+                                                        className="w-full h-full border-0 absolute inset-0"
+                                                        allow="autoplay; fullscreen"
+                                                        allowFullScreen
+                                                        title={activeRec.sessionTitle}
+                                                        onLoad={() => setIframeLoaded(true)}
+                                                    />
+                                                );
+                                            } else {
+                                                return (
+                                                    <PremiumPlayer 
+                                                        key={activeRec.id} 
+                                                        src={details.url} 
+                                                        poster={activeRec.thumbnailPath ? getFileUrl(activeRec.thumbnailPath) : null}
+                                                        onLoaded={() => setIframeLoaded(true)} 
+                                                    />
+                                                );
+                                            }
+                                        }
                                         const src = activeRec.hlsPath || activeRec.playbackUrl;
                                         if (!src) return null;
 
