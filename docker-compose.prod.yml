@@ -17,7 +17,7 @@ services:
       POSTGRES_USER: ${DB_USER:-muro_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
-      - "127.0.0.1:5434:5432"
+      - "0.0.0.0:5434:5432"
     volumes:
       - muro101_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:-muro_redis_2024}
     ports:
-      - "127.0.0.1:6380:6379"
+      - "0.0.0.0:6380:6379"
     volumes:
       - muro101_redisdata:/data
     healthcheck:
