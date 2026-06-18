@@ -42,6 +42,10 @@ public class LiveMeetingService : ILiveMeetingService
 
         if (session.Status == SessionStatus.Live)
         {
+            if (!string.IsNullOrEmpty(session.VideoUrl))
+            {
+                return new SessionStartResult(session.Id, "", session.VideoUrl, "Live");
+            }
             if (!string.IsNullOrEmpty(session.BbbMeetingId))
             {
                 var mod = await _context.Users.FindAsync(moderatorUserId)
@@ -61,6 +65,31 @@ public class LiveMeetingService : ILiveMeetingService
 
         var tenant = await _context.Tenants.FindAsync(tenantId)
             ?? throw new KeyNotFoundException("Kurum bulunamadı.");
+
+        if (!string.IsNullOrEmpty(session.VideoUrl))
+        {
+            session.Status = SessionStatus.Live;
+            await _context.SaveChangesAsync();
+            await _cache.RemoveByPrefixAsync($"{tenantId}:courses:");
+
+            var enrolledUserIds = await _context.CourseGroups
+                .Where(cg => cg.CourseId == courseId)
+                .Join(_context.GroupMembers, cg => cg.GroupId, gm => gm.GroupId, (cg, gm) => gm.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            if (enrolledUserIds.Any())
+            {
+                await _notificationService.BulkSendAsync(tenantId, new Application.DTOs.Notifications.BulkNotificationRequest(
+                    enrolledUserIds,
+                    "🔴 Canlı Ders Başladı",
+                    $"\"{session.Title}\" dersi şu an canlı! Hemen katıl.",
+                    "SessionStarted"
+                ));
+            }
+
+            return new SessionStartResult(session.Id, "", session.VideoUrl, "Live");
+        }
 
         var meetingId = $"{tenant.Code}_{session.Id}";
         var attendeePw = _config["Bbb:DefaultAttendeePw"] ?? "ap";
@@ -110,16 +139,16 @@ public class LiveMeetingService : ILiveMeetingService
             IsModerator: true
         ));
 
-        var enrolledUserIds = await _context.CourseGroups
+        var enrolledUserIds2 = await _context.CourseGroups
             .Where(cg => cg.CourseId == courseId)
             .Join(_context.GroupMembers, cg => cg.GroupId, gm => gm.GroupId, (cg, gm) => gm.UserId)
             .Distinct()
             .ToListAsync();
 
-        if (enrolledUserIds.Any())
+        if (enrolledUserIds2.Any())
         {
             await _notificationService.BulkSendAsync(tenantId, new Application.DTOs.Notifications.BulkNotificationRequest(
-                enrolledUserIds,
+                enrolledUserIds2,
                 "🔴 Canlı Ders Başladı",
                 $"\"{session.Title}\" dersi şu an canlı! Hemen katıl.",
                 "SessionStarted"
@@ -140,6 +169,27 @@ public class LiveMeetingService : ILiveMeetingService
         if (session.Status != SessionStatus.Live)
             throw new InvalidOperationException("Ders henüz başlamadı veya sona erdi.");
 
+        if (!string.IsNullOrEmpty(session.VideoUrl))
+        {
+            if (checkGroupAccess)
+            {
+                var hasAccess = await _groupAccess.CanAccessCourseAsync(tenantId, userId, courseId);
+                if (!hasAccess)
+                    throw new UnauthorizedAccessException("Bu derse erişim yetkiniz yok.");
+            }
+            else
+            {
+                var isMember = await _context.TenantMemberships
+                    .AnyAsync(tm => tm.TenantId == tenantId && tm.UserId == userId && tm.Status == "active");
+                if (!isMember)
+                    throw new UnauthorizedAccessException("Bu derse erişim yetkiniz yok.");
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            var isModerator = user?.Role is Domain.Enums.UserRole.Admin or Domain.Enums.UserRole.Instructor;
+            return new SessionJoinResult(session.Id, session.VideoUrl, isModerator);
+        }
+
         if (string.IsNullOrEmpty(session.BbbMeetingId))
             throw new InvalidOperationException("BBB meeting bilgisi bulunamadı.");
 
@@ -157,9 +207,9 @@ public class LiveMeetingService : ILiveMeetingService
                 throw new UnauthorizedAccessException("Bu derse erişim yetkiniz yok.");
         }
 
-        var user = await _context.Users.FindAsync(userId);
-        var isModerator = user?.Role is Domain.Enums.UserRole.Admin or Domain.Enums.UserRole.Instructor;
-        var password = isModerator
+        var user2 = await _context.Users.FindAsync(userId);
+        var isModerator2 = user2?.Role is Domain.Enums.UserRole.Admin or Domain.Enums.UserRole.Instructor;
+        var password = isModerator2
             ? (_config["Bbb:DefaultModeratorPw"] ?? "mp")
             : (_config["Bbb:DefaultAttendeePw"] ?? "ap");
 
@@ -168,14 +218,14 @@ public class LiveMeetingService : ILiveMeetingService
             FullName: fullName,
             Password: password,
             UserId: userId,
-            IsModerator: isModerator
+            IsModerator: isModerator2
         ));
 
         // Performans Optimizasyonu: Yoklama kayıtları artık Join butonunda değil, 
         // BbbWebhookController (user-joined event) üzerinden asenkron olarak alınmaktadır.
         // Bu sayede peak anlarda veritabanı kilitlenmesi (lock contention) önlenir.
 
-        return new SessionJoinResult(session.Id, joinUrl, isModerator);
+        return new SessionJoinResult(session.Id, joinUrl, isModerator2);
     }
 
     public async Task EndSessionAsync(Guid tenantId, Guid courseId, Guid sessionId)

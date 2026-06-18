@@ -1417,7 +1417,11 @@ function LiveStartModal({
     onStart: (id: string, topic: string, videoUrl: string) => void; 
     loading: boolean; 
 }) {
+    const [type, setType] = useState<"bbb" | "youtube">("bbb");
     const [videoUrl, setVideoUrl] = useState("");
+    
+    const isStartDisabled = !topic.trim() || loading || (type === "youtube" && !videoUrl.trim());
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
@@ -1436,16 +1440,39 @@ function LiveStartModal({
                             className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0A1931]/5 focus:border-[#A0AEC0] transition-all" />
                         <p className="text-[10px] text-[#A0AEC0] mt-2">Dersin konusu aynı zamanda ders kaydının da ismi olacaktır.</p>
                     </div>
+
                     <div>
-                        <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5">Canlı Yayın Linki <span className="text-gray-400">(İsteğe Bağlı)</span></label>
-                        <input type="text" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="Örn: https://youtube.com/live/... veya Zoom vb."
-                            className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0A1931]/5 focus:border-[#A0AEC0] transition-all" />
-                        <p className="text-[10px] text-[#A0AEC0] mt-2">Öğrencilerin harici platformlar (YouTube, Zoom vb.) üzerinden katılması için link ekleyebilirsiniz.</p>
+                        <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5">Yayın Tipi</label>
+                        <div className="grid grid-cols-2 gap-3 mt-1">
+                            <button
+                                type="button"
+                                onClick={() => setType("bbb")}
+                                className={`py-3 px-4 text-xs font-bold rounded-xl border transition-all ${type === "bbb" ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-[#E2E8F0] hover:bg-gray-50 text-[#1B3B6F]"}`}
+                            >
+                                BigBlueButton (Sınıf)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setType("youtube")}
+                                className={`py-3 px-4 text-xs font-bold rounded-xl border transition-all ${type === "youtube" ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-[#E2E8F0] hover:bg-gray-50 text-[#1B3B6F]"}`}
+                            >
+                                YouTube / Harici Yayın
+                            </button>
+                        </div>
                     </div>
+
+                    {type === "youtube" && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                            <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5">Canlı Yayın Linki <span className="text-red-500">*</span></label>
+                            <input type="text" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="Örn: https://youtube.com/live/... veya Zoom vb."
+                                className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0A1931]/5 focus:border-[#A0AEC0] transition-all" />
+                            <p className="text-[10px] text-[#A0AEC0] mt-2">Öğrencilerin harici platformlar (YouTube, Zoom vb.) üzerinden katılması için link eklemelisiniz.</p>
+                        </div>
+                    )}
                 </div>
                 <div className="p-6 pt-0 flex gap-3">
                     <button onClick={onClose} className="flex-1 py-3 text-sm font-bold text-[#A9A9A9] hover:bg-[#E2E8F0]/40 rounded-xl transition-all">İptal</button>
-                    <button onClick={() => onStart(modal.courseId, topic, videoUrl)} disabled={!topic.trim() || loading}
+                    <button onClick={() => onStart(modal.courseId, topic, type === "youtube" ? videoUrl : "")} disabled={isStartDisabled}
                         className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />} Canlı Dersi Başlat
                     </button>
