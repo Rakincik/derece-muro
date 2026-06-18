@@ -60,7 +60,7 @@ public class HlsProcessingService : IHlsProcessingService
         bool is1080p = sourceHeight >= 900; // 900p ve üzerini 1080p kabul et
         
         string highLabel = is1080p ? "1080p" : "720p";
-        string highScale = is1080p ? "1920:1080" : "1280:720";
+        string highHeight = is1080p ? "1080" : "720";
         string highRes   = is1080p ? "1920x1080" : "1280x720";
         string highBand  = is1080p ? "1400000" : "1200000"; // Master playlist bandwidth
         
@@ -132,7 +132,7 @@ public class HlsProcessingService : IHlsProcessingService
         {
             // ── GPU Pipeline: CUDA decode → scale_cuda → NVENC encode (zero-copy, MAX SPEED) ──
             ffmpegArgs = $"-y -hwaccel cuda -hwaccel_output_format cuda -i \"{sourceMp4Path}\" " +
-                         $"-filter_complex \"[0:v]scale_cuda=854:480[v1];[0:v]scale_cuda={highScale}[v2]\" " +
+                         $"-filter_complex \"[0:v]scale_cuda=-2:480[v1];[0:v]scale_cuda=-2:{highHeight}[v2]\" " +
                          $"-map \"[v1]\" -c:v:0 h264_nvenc -preset p4 -rc vbr -cq 28 -b:v:0 0.3M -maxrate:v:0 0.3M -bufsize:v:0 0.6M " +
                          $"-map \"[v2]\" -c:v:1 h264_nvenc -preset p4 -rc vbr -cq 28 -b:v:1 {nvencHighBitrate} -maxrate:v:1 {nvencHighBitrate} -bufsize:v:1 {nvencHighBufsize} " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +
@@ -148,7 +148,7 @@ public class HlsProcessingService : IHlsProcessingService
             ffmpegArgs = $"-y -init_hw_device qsv=hw:/dev/dri/renderD129 -filter_hw_device hw " +
                          $"-i \"{sourceMp4Path}\" " +
                          $"-filter_complex \"[0:v]format=nv12,hwupload=extra_hw_frames=64,split=2[s0][s1];" +
-                         $"[s0]scale_qsv=854:480[v1];[s1]scale_qsv={highScale}[v2]\" " +
+                         $"[s0]scale_qsv=w=-2:h=480[v1];[s1]scale_qsv=w=-2:h={highHeight}[v2]\" " +
                          $"-map \"[v1]\" -c:v:0 h264_qsv -preset medium -rc vbr -b:v:0 0.3M -maxrate:v:0 0.3M -bufsize:v:0 0.6M " +
                          $"-map \"[v2]\" -c:v:1 h264_qsv -preset medium -rc vbr -b:v:1 {nvencHighBitrate} -maxrate:v:1 {nvencHighBitrate} -bufsize:v:1 {nvencHighBufsize} " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +
@@ -162,7 +162,7 @@ public class HlsProcessingService : IHlsProcessingService
         {
             // ── CPU Pipeline: Software decode → scale → libx264 encode (configurable threads, FAST) ──
             ffmpegArgs = $"-y -i \"{sourceMp4Path}\" " +
-                         $"-filter_complex \"[0:v]split=2[v480][v720];[v480]scale=854:480[v1];[v720]scale={highScale}[v2]\" " +
+                         $"-filter_complex \"[0:v]split=2[v480][v720];[v480]scale=-2:480[v1];[v720]scale=-2:{highHeight}[v2]\" " +
                          $"-map \"[v1]\" -c:v:0 libx264 -preset veryfast -crf 28 -threads {_cpuThreads} -maxrate:v:0 0.35M -bufsize:v:0 0.7M " +
                          $"-map \"[v2]\" -c:v:1 libx264 -preset veryfast -crf 28 -threads {_cpuThreads} -maxrate:v:1 {cpuHighBitrate} -bufsize:v:1 {cpuHighBufsize} " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +

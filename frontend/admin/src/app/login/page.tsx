@@ -60,19 +60,19 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#060E1A] via-[#0A1931] to-[#060E1A]">
-      <div className="w-full max-w-md p-6">
+      <div className="w-full max-w-md px-4 py-8 sm:p-6">
 
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <img 
             src="/admin/monopol_logo.png" 
             alt={brandName} 
-            className="w-64 h-auto mx-auto object-contain drop-shadow-lg" 
+            className="w-48 sm:w-64 max-w-[80%] h-auto mx-auto object-contain drop-shadow-lg transition-all" 
           />
         </div>
 
         {/* Card */}
-        <div className="bg-[#1B3B6F]/15 backdrop-blur-xl border border-[#1B3B6F]/30 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[#1B3B6F]/15 backdrop-blur-xl border border-[#1B3B6F]/30 rounded-2xl p-5 sm:p-8 shadow-2xl mx-2 sm:mx-0">
           <h2 className="text-lg font-semibold text-white mb-6">Giriş Yap</h2>
 
           {error && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Bell, X, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +22,9 @@ export default function NotificationBell() {
     const [open, setOpen] = useState(false);
     const [selectedNotif, setSelectedNotif] = useState<NotificationDto | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
 
     // İlk yükleme: unread count + son 10 bildirim
     const loadInitial = useCallback(async () => {
@@ -161,8 +165,8 @@ export default function NotificationBell() {
             )}
 
             {/* Bildirim Detay Modalı */}
-            {selectedNotif && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {selectedNotif && mounted && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
                     <div className="absolute inset-0 bg-[#0A1931]/40 backdrop-blur-sm transition-opacity duration-300" onClick={() => setSelectedNotif(null)} />
                     <div className="relative w-full max-w-md bg-white rounded-2xl shadow-[0_20px_50px_rgba(10,25,49,0.15)] animate-dropdown overflow-hidden flex flex-col">
                         {/* Decorative Top Accent */}
@@ -202,7 +206,8 @@ export default function NotificationBell() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

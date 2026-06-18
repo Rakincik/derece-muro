@@ -118,6 +118,7 @@ export default function CoursesPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [showWizard, setShowWizard] = useState(false);
+    const [isSavingWizard, setIsSavingWizard] = useState(false);
     const [editCourse, setEditCourse] = useState<MappedCourse | null>(null);
     const [detail, setDetail] = useState<MappedCourse | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -231,6 +232,7 @@ export default function CoursesPage() {
         session?: { title: string; scheduledStart: string; durationMinutes: number; recordingEnabled: boolean };
     }) => {
         if (!token || !tenantId) return;
+        setIsSavingWizard(true);
         try {
             const created = await courseApi.create(token, tenantId, {
                 title: data.title || "Yeni Ders",
@@ -259,8 +261,9 @@ export default function CoursesPage() {
             }
             await fetchCourses();
             success("Ders oluşturuldu! 🎉");
+            setShowWizard(false); setEditCourse(null);
         } catch { toastError("Hata", "Ders oluşturulamadı."); }
-        setShowWizard(false); setEditCourse(null);
+        finally { setIsSavingWizard(false); }
     }, [token, tenantId, fetchCourses]);
 
     // ── BBB Handlers ──────────────────────────────────────────────────────────
@@ -943,7 +946,7 @@ export default function CoursesPage() {
                 </div>
             )}
 
-            {showWizard && <CourseWizard onClose={() => { setShowWizard(false); setEditCourse(null); }} onSave={handleWizardSave} />}
+            {showWizard && <CourseWizard onClose={() => { setShowWizard(false); setEditCourse(null); }} onSave={handleWizardSave} isSaving={isSavingWizard} />}
             <ConfirmDialog open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && handleDelete(deleteTarget)} title="Dersi Sil" message="Bu ders ve tüm içerikler kalıcı olarak silinecek." />
             
         </div>
@@ -1193,9 +1196,10 @@ function DocsTab({ courseId }: { courseId: string }) {
 // ════════════════════════════════════════════════════════════════════════════════
 // 3-STEP WIZARD
 // ════════════════════════════════════════════════════════════════════════════════
-function CourseWizard({ onClose, onSave }: {
+function CourseWizard({ onClose, onSave, isSaving }: {
     onClose: () => void;
     onSave: (data: { title: string; description: string; courseType: string; isPublished: boolean; coverImage?: File; startDate?: string; instructorId?: string }) => void;
+    isSaving?: boolean;
 }) {
     const { token, currentTenantId: tenantId } = useAuth();
     const [instructors, setInstructors] = useState<UserDto[]>([]);
@@ -1228,6 +1232,7 @@ function CourseWizard({ onClose, onSave }: {
     ];
 
     const handleSubmit = () => {
+        if (isSaving) return;
         const data: any = { title: f.title, description: f.description, courseType: f.courseType, isPublished: f.isPublished, instructorId: f.instructorId || undefined };
         if (f.coverImage) data.coverImage = f.coverImage;
         if (f.addFirstLesson && f.startDate) data.startDate = f.startDate;
@@ -1383,14 +1388,15 @@ function CourseWizard({ onClose, onSave }: {
                         <ChevronLeft size={16} /> {step > 1 ? "Geri" : "İptal"}
                     </button>
                     {step < 3 ? (
-                        <button onClick={() => setStep(step + 1)} disabled={!canNext}
+                        <button onClick={() => setStep(step + 1)} disabled={!canNext || isSaving}
                             className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-[#0A1931] rounded-xl hover:bg-[#1B3B6F] shadow-xl shadow-black/10 transition-all active:scale-[0.98] disabled:opacity-50">
                             İleri <ChevronRight size={16} />
                         </button>
                     ) : (
-                        <button onClick={handleSubmit}
-                            className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-[#1B3B6F] rounded-xl hover:bg-[#0A1931] shadow-xl shadow-[#0A1931]/20 transition-all active:scale-[0.98]">
-                            <CheckCircle2 size={16} /> Oluştur
+                        <button onClick={handleSubmit} disabled={isSaving}
+                            className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-[#1B3B6F] rounded-xl hover:bg-[#0A1931] shadow-xl shadow-[#0A1931]/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} 
+                            {isSaving ? "Oluşturuluyor..." : "Oluştur"}
                         </button>
                     )}
                 </div>

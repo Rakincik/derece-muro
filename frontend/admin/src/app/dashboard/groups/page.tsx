@@ -452,42 +452,53 @@ export default function GroupsPage() {
 
     return (
         <div className="flex flex-col space-y-3 min-h-[100dvh] lg:min-h-0 lg:h-[calc(100vh-64px)] pb-16 lg:pb-0">
-            {/* Header */}
+            {/* Header & Alert */}
             <div className="flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-3">
-                <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-[#0A1931] flex items-center gap-2">
-                        <FolderTree size={20} className="text-[#1B3B6F]" /> Gruplar
-                    </h1>
-                    <p className="text-xs sm:text-sm text-[#A9A9A9] mt-0.5">Öğrenci gruplarını yönetin</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                    <div>
+                        <h1 className="text-lg sm:text-xl font-bold text-[#0A1931] flex items-center gap-2">
+                            <FolderTree size={18} className="text-[#1B3B6F]" /> Gruplar
+                        </h1>
+                        <p className="text-[11px] sm:text-xs text-[#A9A9A9] mt-0.5">Öğrenci gruplarını yönetin</p>
+                    </div>
+                    
+                    {emptyGroups > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg shadow-sm">
+                            <AlertTriangle size={14} className="text-amber-500" />
+                            <p className="text-[11px] text-amber-700 font-medium">
+                                <strong>{emptyGroups} boş grup</strong> (⚠️)
+                            </p>
+                        </div>
+                    )}
                 </div>
+
                 <div className="flex items-center gap-2">
-                    <button onClick={loadGroups} className="p-2.5 rounded-xl bg-white border border-[#E2E8F0] hover:bg-[#E2E8F0]/20 text-[#A9A9A9]"><RefreshCw size={18} /></button>
-                    <button onClick={openCreate} className="px-5 py-2.5 bg-[#0A1931] text-white text-sm sm:text-base font-bold rounded-xl hover:bg-[#1B3B6F] transition-colors flex items-center gap-2 shadow-lg shadow-black/10">
-                        <Plus size={18} /> Yeni Grup
+                    <button onClick={loadGroups} className="p-2 rounded-xl bg-white border border-[#E2E8F0] hover:bg-[#E2E8F0]/20 text-[#A9A9A9]"><RefreshCw size={16} /></button>
+                    <button onClick={openCreate} className="px-4 py-2 bg-[#0A1931] text-white text-sm font-bold rounded-xl hover:bg-[#1B3B6F] transition-colors flex items-center gap-1.5 shadow-lg shadow-black/10">
+                        <Plus size={16} /> Yeni Grup
                     </button>
                 </div>
             </div>
 
-            {/* Stats */}
-            <KpiGrid 
-                items={[
+            {/* Stats (Compact) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+                {[
                     { label: "Toplam Grup", value: groups.length, icon: FolderTree, colorClass: "text-indigo-600", bgClass: "bg-indigo-50" },
                     { label: "Toplam Öğrenci", value: totalMembers, icon: Users, colorClass: "text-blue-600", bgClass: "bg-blue-50" },
                     { label: "Ders Ataması", value: totalCourses, icon: BookOpen, colorClass: "text-emerald-600", bgClass: "bg-emerald-50" },
                     { label: "Boş Grup", value: emptyGroups, icon: AlertTriangle, colorClass: emptyGroups > 0 ? "text-amber-600" : "text-teal-600", bgClass: emptyGroups > 0 ? "bg-amber-50" : "bg-teal-50" },
-                ]}
-                className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0"
-            />
-
-            {/* Empty Groups Alert */}
-            {emptyGroups > 0 && (
-                <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl shrink-0">
-                    <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />
-                    <p className="text-xs text-amber-700 font-medium">
-                        <strong>{emptyGroups} grup</strong> henüz öğrencisi olmayan boş grup. Ağaçta ⚠️ ile işaretlendi.
-                    </p>
-                </div>
-            )}
+                ].map((k, i) => (
+                    <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-2.5 flex items-center gap-3 shadow-sm">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${k.bgClass}`}>
+                            <k.icon size={16} className={k.colorClass} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider">{k.label}</p>
+                            <p className="text-base font-black text-[#0A1931] leading-tight">{k.value}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             {/* Main Content */}
             <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
@@ -529,41 +540,41 @@ export default function GroupsPage() {
                     ) : detail ? (
                         <>
                             {/* Detail Header - Ultra Compact */}
-                            <div className="p-3 px-5 border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                    <div className="flex items-center flex-wrap gap-3">
+                            <div className="p-3 px-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                                    <div className="flex items-center flex-wrap gap-2.5">
                                         <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-[#E2E8F0] bg-white relative overflow-hidden shrink-0">
                                             <div className="absolute inset-0 opacity-10" style={{ background: detail.color ?? "#6366f1" }} />
                                             <FolderTree size={14} style={{ color: detail.color ?? "#6366f1" }} />
                                         </div>
                                         <h2 className="text-lg font-black text-[#0A1931] tracking-tight">{detail.name}</h2>
+                                        
+                                        <div className="flex items-center gap-1.5 ml-1">
+                                            <button onClick={() => { setCloneGroupName(`${detail.name} (Kopya)`); setCloneGroupMembers(true); setCloneGroupCourses(true); setCloneGroupOpen(true); }}
+                                                className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1" title="Grubu Kopyala"><Copy size={12} /> Kopyala</button>
+                                            <button onClick={() => openEdit(detail as unknown as GroupListDto)}
+                                                className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Edit3 size={12} /> Düzenle</button>
+                                        </div>
+
                                         <div className="hidden sm:block w-px h-4 bg-[#E2E8F0] mx-1" />
-                                        <div className="flex items-center flex-wrap gap-2">
-                                            <span className="whitespace-nowrap px-2.5 py-1 bg-white border border-[#E2E8F0] text-[#475569] text-[11px] rounded-lg font-bold shadow-sm flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: detail.color ?? "#6366f1" }} />{detail.memberCount} öğrenci</span>
-                                            <span className="whitespace-nowrap px-2.5 py-1 bg-white border border-[#E2E8F0] text-[#475569] text-[11px] rounded-lg font-bold shadow-sm">{detail.courseCount} ders</span>
-                                            {detail.educationType && <span className="whitespace-nowrap px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] rounded-lg font-bold border border-indigo-200 flex items-center gap-1">{getEducationIcon(detail.educationType, 12)} {detail.educationType}</span>}
-                                            {detail.parentGroupName && <span className="whitespace-nowrap px-2.5 py-1 bg-[#F8FAFC] text-[#64748B] text-[11px] rounded-lg border border-[#E2E8F0] font-bold shadow-sm">↑ {detail.parentGroupName}</span>}
+                                        
+                                        <div className="flex items-center flex-wrap gap-1.5">
+                                            <span className="whitespace-nowrap px-2 py-0.5 bg-white border border-[#E2E8F0] text-[#475569] text-[10px] rounded-md font-bold shadow-sm flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: detail.color ?? "#6366f1" }} />{detail.memberCount} öğrenci</span>
+                                            <span className="whitespace-nowrap px-2 py-0.5 bg-white border border-[#E2E8F0] text-[#475569] text-[10px] rounded-md font-bold shadow-sm">{detail.courseCount} ders</span>
+                                            {detail.educationType && <span className="whitespace-nowrap px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] rounded-md font-bold border border-indigo-200 flex items-center gap-1">{getEducationIcon(detail.educationType, 12)} {detail.educationType}</span>}
+                                            {detail.parentGroupName && <span className="whitespace-nowrap px-2 py-0.5 bg-[#F8FAFC] text-[#64748B] text-[10px] rounded-md border border-[#E2E8F0] font-bold shadow-sm">↑ {detail.parentGroupName}</span>}
                                         </div>
                                     </div>
-                                    <div className="flex items-center flex-wrap gap-3 justify-between sm:justify-start">
-                                        <div className="w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
-                                            <PremiumTabs 
-                                                tabs={[
-                                                    { id: "members", label: "Öğrenciler", icon: <Users size={12} /> },
-                                                    { id: "courses", label: "Dersler", icon: <BookOpen size={12} /> },
-                                                    { id: "settings", label: "Ayarlar", icon: <Settings size={12} /> }
-                                                ]} 
-                                                activeTab={activeTab} 
-                                                onChange={(id) => setActiveTab(id as DetailTab)} 
-                                            />
-                                        </div>
-                                        <div className="hidden sm:block w-px h-5 bg-[#E2E8F0]" />
-                                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                                            <button onClick={() => { setCloneGroupName(`${detail.name} (Kopya)`); setCloneGroupMembers(true); setCloneGroupCourses(true); setCloneGroupOpen(true); }}
-                                                className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-lg text-[#64748B] hover:text-[#0A1931] font-bold text-[11px] transition-colors shadow-sm flex items-center gap-1.5" title="Grubu Kopyala"><Copy size={12} /> Kopyala</button>
-                                            <button onClick={() => openEdit(detail as unknown as GroupListDto)}
-                                                className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-lg text-[#64748B] hover:text-[#0A1931] font-bold text-[11px] transition-colors shadow-sm flex items-center gap-1.5"><Edit3 size={12} /> Düzenle</button>
-                                        </div>
+                                    <div className="w-full xl:w-auto overflow-x-auto hide-scrollbar">
+                                        <PremiumTabs 
+                                            tabs={[
+                                                { id: "members", label: "Öğrenciler", icon: <Users size={12} /> },
+                                                { id: "courses", label: "Dersler", icon: <BookOpen size={12} /> },
+                                                { id: "settings", label: "Ayarlar", icon: <Settings size={12} /> }
+                                            ]} 
+                                            activeTab={activeTab} 
+                                            onChange={(id) => setActiveTab(id as DetailTab)} 
+                                        />
                                     </div>
                                 </div>
                             </div>

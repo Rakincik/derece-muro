@@ -458,7 +458,7 @@ export default function MediaLibraryPage() {
                 {/* Header Section */}
 
                 {/* Header Section & Toolbar */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                <div className="flex flex-col 2xl:flex-row justify-between items-start 2xl:items-center mb-6 gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
                     {/* Breadcrumbs & Title */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center flex-wrap gap-1 text-xs font-medium text-gray-500 mb-1">
@@ -480,7 +480,7 @@ export default function MediaLibraryPage() {
                     </div>
 
                     {/* Actions & Filters */}
-                    <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                    <div className="flex flex-wrap items-center justify-start 2xl:justify-end gap-3 w-full 2xl:w-auto">
                         <div className="relative w-full sm:w-56">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
