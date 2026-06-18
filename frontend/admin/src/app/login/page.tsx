@@ -67,9 +67,9 @@ export default function AdminLoginPage() {
           <img 
             src="/monopol_logo.png" 
             alt={brandName} 
-            className="w-20 h-20 rounded-2xl mx-auto mb-4 object-contain shadow-2xl shadow-[#0A1931]/40" 
+            className="w-48 h-auto mx-auto mb-4 object-contain drop-shadow-lg" 
           />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#A0AEC0] via-[#E2E8F0] to-[#A9A9A9] bg-clip-text text-transparent">
+          <h1 className="text-base font-bold bg-gradient-to-r from-[#A0AEC0] via-[#E2E8F0] to-[#A9A9A9] bg-clip-text text-transparent">
             {brandName}
           </h1>
           <p className="text-[#A0AEC0] text-xs mt-2">Yönetim Paneli</p>
