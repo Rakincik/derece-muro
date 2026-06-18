@@ -21,9 +21,9 @@ public class UploadProcessingJob : BackgroundService
     private readonly ILogger<UploadProcessingJob> _logger;
     private readonly string _hlsOutputDir;
 
-    private const int NvencSlots = 3;   // RTX 3090 (enc bloğu ~%100 tavan)
-    private const int QsvSlots   = 2;   // UHD 770 iGPU
-    private const int CpuSlots   = 6;   // libx264 (CPU'da boş kapasite)
+    private readonly int _nvencSlots;
+    private readonly int _qsvSlots;
+    private readonly int _cpuSlots;
 
     private int _activeNvencCount = 0;
     private int _activeQsvCount = 0;
@@ -39,26 +39,30 @@ public class UploadProcessingJob : BackgroundService
         _logger = logger;
         _hlsOutputDir = config["Storage:HlsOutputDir"] ?? Path.Combine("wwwroot", "hls");
         Directory.CreateDirectory(_hlsOutputDir);
+
+        _nvencSlots = config.GetValue<int>("Worker:NvencSlots", 3);
+        _qsvSlots   = config.GetValue<int>("Worker:QsvSlots", 2);
+        _cpuSlots   = config.GetValue<int>("Worker:CpuSlots", 6);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation(
             "UploadProcessingJob (sürekli akış) başlatıldı. NVENC={Nv} QSV={Qsv} CPU={Cpu} consumer.",
-            NvencSlots, QsvSlots, CpuSlots);
+            _nvencSlots, _qsvSlots, _cpuSlots);
 
-        var consumers = new List<Task>();
+        var consumerTasks = new List<Task>();
 
-        for (int i = 0; i < NvencSlots; i++)
-            consumers.Add(RunConsumerLoopAsync("nvenc", i, stoppingToken));
+        for (int i = 0; i < _nvencSlots; i++)
+            consumerTasks.Add(RunConsumerLoopAsync("nvenc", i, stoppingToken));
 
-        for (int i = 0; i < QsvSlots; i++)
-            consumers.Add(RunConsumerLoopAsync("qsv", i, stoppingToken));
+        for (int i = 0; i < _qsvSlots; i++)
+            consumerTasks.Add(RunConsumerLoopAsync("qsv", i, stoppingToken));
 
-        for (int i = 0; i < CpuSlots; i++)
-            consumers.Add(RunConsumerLoopAsync("cpu", i, stoppingToken));
+        for (int i = 0; i < _cpuSlots; i++)
+            consumerTasks.Add(RunConsumerLoopAsync("cpu", i, stoppingToken));
 
-        await Task.WhenAll(consumers);
+        await Task.WhenAll(consumerTasks);
     }
 
     private async Task RunConsumerLoopAsync(string pipeline, int slotIndex, CancellationToken ct)
@@ -108,10 +112,13 @@ public class UploadProcessingJob : BackgroundService
     {
         // ÖNCELİKLENDİRME MANTIĞI:
         // Eğer QSV isek ve NVENC'in hala boş slotu varsa (tam kapasite çalışmıyorsa), videoyu alma, NVENC kapsın.
-        if (pipeline == "qsv" && Volatile.Read(ref _activeNvencCount) < NvencSlots) return null;
+        if (pipeline == "qsv" && _nvencSlots > 0 && Volatile.Read(ref _activeNvencCount) < _nvencSlots) return null;
         
         // Eğer CPU isek ve NVENC veya QSV'nin boş slotu varsa, videoyu alma, güçlü kartlar kapsın.
-        if (pipeline == "cpu" && (Volatile.Read(ref _activeNvencCount) < NvencSlots || Volatile.Read(ref _activeQsvCount) < QsvSlots)) return null;
+        if (pipeline == "cpu" && (
+            (_nvencSlots > 0 && Volatile.Read(ref _activeNvencCount) < _nvencSlots) || 
+            (_qsvSlots > 0 && Volatile.Read(ref _activeQsvCount) < _qsvSlots))) 
+            return null;
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MuroDbContext>();
 

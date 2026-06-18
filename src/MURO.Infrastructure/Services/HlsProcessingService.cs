@@ -38,12 +38,14 @@ public class HlsProcessingService : IHlsProcessingService
     private readonly ILogger<HlsProcessingService> _logger;
     private readonly string _ffmpegPath;
     private readonly ICacheService _cache;
+    private readonly int _cpuThreads;
 
     public HlsProcessingService(IConfiguration config, ILogger<HlsProcessingService> logger, ICacheService cache)
     {
         _logger = logger;
         _ffmpegPath = config["Ffmpeg:Path"] ?? "ffmpeg"; // PATH'te varsa sadece "ffmpeg"
         _cache = cache;
+        _cpuThreads = config.GetValue<int>("Ffmpeg:CpuThreads", 6);
     }
 
     public async Task<HlsProcessResult> ProcessAsync(
@@ -158,11 +160,11 @@ public class HlsProcessingService : IHlsProcessingService
         }
         else
         {
-            // ── CPU Pipeline: Software decode → scale → libx264 encode (6 threads, FAST) ──
+            // ── CPU Pipeline: Software decode → scale → libx264 encode (configurable threads, FAST) ──
             ffmpegArgs = $"-y -i \"{sourceMp4Path}\" " +
                          $"-filter_complex \"[0:v]split=2[v480][v720];[v480]scale=854:480[v1];[v720]scale={highScale}[v2]\" " +
-                         $"-map \"[v1]\" -c:v:0 libx264 -preset veryfast -crf 28 -threads 6 -maxrate:v:0 0.35M -bufsize:v:0 0.7M " +
-                         $"-map \"[v2]\" -c:v:1 libx264 -preset veryfast -crf 28 -threads 6 -maxrate:v:1 {cpuHighBitrate} -bufsize:v:1 {cpuHighBufsize} " +
+                         $"-map \"[v1]\" -c:v:0 libx264 -preset veryfast -crf 28 -threads {_cpuThreads} -maxrate:v:0 0.35M -bufsize:v:0 0.7M " +
+                         $"-map \"[v2]\" -c:v:1 libx264 -preset veryfast -crf 28 -threads {_cpuThreads} -maxrate:v:1 {cpuHighBitrate} -bufsize:v:1 {cpuHighBufsize} " +
                          $"-map a:0 -c:a:0 aac -b:a:0 96k " +
                          $"-map a:0 -c:a:1 aac -b:a:1 128k " +
                          $"-f hls -hls_time 6 -hls_playlist_type vod -hls_flags independent_segments " +

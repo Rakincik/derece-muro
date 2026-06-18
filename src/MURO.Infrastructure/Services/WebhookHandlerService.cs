@@ -241,9 +241,9 @@ public class WebhookHandlerService : IWebhookHandlerService
             asset.FilePath = evt.RecordingUrl;
             asset.HlsPath = null;
             asset.DurationSeconds = durationSeconds;
-            asset.Status = MediaStatus.Ready;
+            asset.Status = MediaStatus.Uploading;
 
-            recording.Status = MediaStatus.Ready;
+            recording.Status = MediaStatus.Processing;
         }
 
         await _context.SaveChangesAsync();
