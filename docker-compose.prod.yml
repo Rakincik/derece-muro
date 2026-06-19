@@ -66,7 +66,7 @@ services:
       - Jwt__Audience=MURO
       - Bbb__Url=https://canli.monopoluzem.com.tr/bigbluebutton/api
       - Bbb__Secret=DJcEz4jbbLaA4WeBdGQ3tva0n8UXCrdm0ZVU42Ubc
-      - Bbb__WebhookSharedSecret=${BBB_WEBHOOK_SECRET:-muro-webhook-secret-2024}
+      - Bbb__WebhookSharedSecret=DJcEz4jbbLaA4WeBdGQ3tva0n8UXCrdm0ZVU42Ubc
       - Bbb__DefaultAttendeePw=attendee123
       - Bbb__DefaultModeratorPw=moderator123
       - Bbb__Defaults__LogoutURL=${SITE_URL:-https://yourdomain.com}/admin/dashboard/courses

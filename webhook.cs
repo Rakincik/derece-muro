@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 class Program {
     static async Task Main() {
-        var secret = "HMAeOSDnwXfzjoocaiCS2AEj2zTZE9PwS6HPqgkXk";
-        var bbbUrl = "https://bbb.gikart.com.tr/bigbluebutton/api";
-        var callbackUrl = "https://api-muro.on7medya.com/api/v1/bbb/webhook";
+        var secret = "DJcEz4jbbLaA4WeBdGQ3tva0n8UXCrdm0ZVU42Ubc";
+        var bbbUrl = "https://canli.monopoluzem.com.tr/bigbluebutton/api";
+        var callbackUrl = "https://online.monopoluzem.com.tr/api/v1/bbb/webhook";
         var qs = "callbackURL=" + Uri.EscapeDataString(callbackUrl);
         var data = "hooks/create" + qs + secret;
         var bytes = Encoding.UTF8.GetBytes(data);
