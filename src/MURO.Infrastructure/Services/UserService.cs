@@ -179,7 +179,12 @@ public class UserService : IUserService
             password = $"{request.TcNo}.{lastTwo}";
         }
 
-        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        var tcCheck = request.TcNo?.Trim();
+        var existingUser = await _context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => 
+                u.Email == email || 
+                (!string.IsNullOrEmpty(tcCheck) && u.TcNo == tcCheck) ||
+                (!string.IsNullOrEmpty(cleanedPhone) && u.Phone == cleanedPhone));
 
         if (existingUser != null)
         {
@@ -188,18 +193,19 @@ public class UserService : IUserService
                 .FirstOrDefaultAsync(tm => tm.UserId == existingUser.Id && tm.TenantId == tenantId);
 
             if (membership != null && membership.Status == "active")
-                throw new InvalidOperationException("Bu kullanıcı adı zaten aktif olarak kayıtlı.");
+                throw new InvalidOperationException("Bu TC Kimlik numarası, Telefon veya E-posta adresi ile aktif bir kullanıcı zaten kayıtlı.");
 
             // Soft delete edilmiş — bilgileri güncelle ve tekrar aktif et
             existingUser.FirstName = request.FirstName;
             existingUser.LastName = request.LastName;
-            existingUser.Phone = cleanedPhone;
+            if (!string.IsNullOrEmpty(cleanedPhone)) existingUser.Phone = cleanedPhone;
             existingUser.PasswordHash = password;
             existingUser.Role = role;
             existingUser.IsActive = true;
+            existingUser.IsDeleted = false; // Restore user visibility globally
             existingUser.StudentType = Enum.TryParse<StudentType>(request.StudentType, true, out var st2) ? st2 : null;
             existingUser.DemoExpiresAt = request.DemoExpiresAt;
-            existingUser.TcNo = request.TcNo;
+            if (!string.IsNullOrEmpty(tcCheck)) existingUser.TcNo = tcCheck;
 
             if (membership != null)
             {
@@ -293,23 +299,28 @@ public class UserService : IUserService
         }
 
         var results = new List<UserListDto>();
-        var existingEmails = (await _context.Users
-            .Select(u => u.Email)
-            .ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            
-        var existingTcs = (await _context.Users
-            .Where(u => !string.IsNullOrEmpty(u.TcNo))
-            .Select(u => u.TcNo)
-            .ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            
-        var existingPhones = (await _context.Users
-            .Where(u => !string.IsNullOrEmpty(u.Phone))
-            .Select(u => u.Phone)
-            .ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        
+        var requestTcs = requests.Where(r => !string.IsNullOrEmpty(r.TcNo)).Select(r => r.TcNo.Trim()).ToList();
+        var requestPhones = requests.Where(r => !string.IsNullOrEmpty(r.Phone)).Select(r => CleanPhoneNumber(r.Phone)).Where(p => p != null).ToList();
+        var requestEmails = requests.Where(r => !string.IsNullOrEmpty(r.Email)).Select(r => r.Email.Trim()).ToList();
+
+        var existingUsersMatch = await _context.Users.IgnoreQueryFilters()
+            .Include(u => u.TenantMemberships.Where(tm => tm.TenantId == tenantId))
+            .Where(u => requestEmails.Contains(u.Email) || 
+                       (!string.IsNullOrEmpty(u.TcNo) && requestTcs.Contains(u.TcNo)) || 
+                       (!string.IsNullOrEmpty(u.Phone) && requestPhones.Contains(u.Phone)))
+            .ToListAsync();
+
+        var existingUsersByTc = existingUsersMatch.Where(u => !string.IsNullOrEmpty(u.TcNo)).ToDictionary(u => u.TcNo, StringComparer.OrdinalIgnoreCase);
+        var existingUsersByPhone = existingUsersMatch.Where(u => !string.IsNullOrEmpty(u.Phone)).ToDictionary(u => u.Phone, StringComparer.OrdinalIgnoreCase);
+        var existingUsersByEmail = existingUsersMatch.ToDictionary(u => u.Email, StringComparer.OrdinalIgnoreCase);
 
         var generatedEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var generatedTcs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var generatedPhones = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Track emails across the whole db for generation
+        var allDbEmails = (await _context.Users.IgnoreQueryFilters().Select(u => u.Email).ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var req in requests)
         {
@@ -321,64 +332,118 @@ public class UserService : IUserService
             }
             var isStudent = role == UserRole.Student;
 
-            // TC No duplicate check
             var tc = req.TcNo?.Trim();
-            if (!string.IsNullOrEmpty(tc))
+            var cleanedPhone = CleanPhoneNumber(req.Phone);
+            string email = req.Email?.Trim();
+
+            User? existingUser = null;
+
+            if (!string.IsNullOrEmpty(tc) && existingUsersByTc.TryGetValue(tc, out var userByTc)) existingUser = userByTc;
+            else if (!string.IsNullOrEmpty(cleanedPhone) && existingUsersByPhone.TryGetValue(cleanedPhone, out var userByPhone)) existingUser = userByPhone;
+            else if (!string.IsNullOrEmpty(email) && existingUsersByEmail.TryGetValue(email, out var userByEmail)) existingUser = userByEmail;
+
+            // Self-duplicate checks in the current batch
+            if (!string.IsNullOrEmpty(tc) && existingUser == null)
             {
-                if (existingTcs.Contains(tc) || generatedTcs.Contains(tc))
+                if (generatedTcs.Contains(tc))
                 {
                     importResult.FailedCount++;
-                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = req.Email ?? "", Status = "Başarısız", Reason = "TC Kimlik numarası zaten kayıtlı" });
-                    continue; // Skip duplicate TC
+                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = req.Email ?? "", Status = "Başarısız", Reason = "Bu excel listesinde aynı TC mükerrer girilmiş" });
+                    continue;
                 }
                 generatedTcs.Add(tc);
             }
 
-            // Phone duplicate check
-            var cleanedPhone = CleanPhoneNumber(req.Phone);
-            if (!string.IsNullOrEmpty(cleanedPhone))
+            if (!string.IsNullOrEmpty(cleanedPhone) && existingUser == null)
             {
-                if (existingPhones.Contains(cleanedPhone) || generatedPhones.Contains(cleanedPhone))
+                if (generatedPhones.Contains(cleanedPhone))
                 {
                     importResult.FailedCount++;
-                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = req.Email ?? "", Status = "Başarısız", Reason = "Telefon numarası zaten kayıtlı" });
-                    continue; // Skip duplicate Phone
+                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = req.Email ?? "", Status = "Başarısız", Reason = "Bu excel listesinde aynı Telefon mükerrer girilmiş" });
+                    continue;
                 }
                 generatedPhones.Add(cleanedPhone);
             }
 
-            string email = req.Email;
-            if (string.IsNullOrWhiteSpace(email))
+            if (string.IsNullOrWhiteSpace(email) && existingUser == null)
             {
                 var baseUsername = ToEnglishUsername(req.FirstName, req.LastName);
                 email = baseUsername;
                 int suffix = 1;
-                while (existingEmails.Contains(email) || generatedEmails.Contains(email))
+                while (allDbEmails.Contains(email) || generatedEmails.Contains(email))
                 {
                     email = $"{baseUsername}{suffix}";
                     suffix++;
                 }
                 generatedEmails.Add(email);
             }
-            else
+            else if (!string.IsNullOrEmpty(email) && existingUser == null)
             {
-                email = email.Trim();
-                if (existingEmails.Contains(email) || generatedEmails.Contains(email)) 
+                if (generatedEmails.Contains(email)) 
                 {
                     importResult.FailedCount++;
-                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = email, Status = "Başarısız", Reason = "E-posta veya kullanıcı adı zaten kullanımda" });
-                    continue; // Duplike
+                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = email, Status = "Başarısız", Reason = "Bu excel listesinde aynı E-posta mükerrer girilmiş" });
+                    continue;
                 }
                 generatedEmails.Add(email);
             }
 
             string password = req.Password;
-            if (isStudent)
+            if (isStudent && string.IsNullOrEmpty(password))
             {
                 var lastTwo = cleanedPhone != null && cleanedPhone.Length >= 2 
                     ? cleanedPhone.Substring(cleanedPhone.Length - 2) 
                     : "00";
                 password = $"{req.TcNo}.{lastTwo}";
+            }
+
+            if (existingUser != null)
+            {
+                var membership = existingUser.TenantMemberships.FirstOrDefault();
+                if (membership != null && membership.Status == "active")
+                {
+                    importResult.FailedCount++;
+                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = email ?? existingUser.Email, Status = "Başarısız", Reason = "Bu kullanıcı (TC, Telefon veya E-posta) zaten aktif olarak kayıtlı." });
+                    continue;
+                }
+
+                // Reactivate
+                existingUser.FirstName = req.FirstName;
+                existingUser.LastName = req.LastName;
+                if (!string.IsNullOrEmpty(cleanedPhone)) existingUser.Phone = cleanedPhone;
+                if (!string.IsNullOrEmpty(password)) existingUser.PasswordHash = password;
+                existingUser.Role = role;
+                existingUser.IsActive = true;
+                existingUser.IsDeleted = false; // Restore
+                existingUser.StudentType = Enum.TryParse<StudentType>(req.StudentType, true, out var st2) ? st2 : null;
+                if (!string.IsNullOrEmpty(tc)) existingUser.TcNo = tc;
+                
+                if (membership != null)
+                {
+                    membership.Status = "active";
+                    membership.Role = role;
+                }
+                else
+                {
+                    _context.TenantMemberships.Add(new TenantMembership
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = existingUser.Id,
+                        TenantId = tenantId,
+                        Role = role,
+                        Status = "active"
+                    });
+                }
+                
+                importResult.ImportedCount++;
+                importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = existingUser.Email, Status = "Başarılı", Reason = "Eski kayıt başarıyla aktifleştirildi" });
+                
+                results.Add(new UserListDto(
+                    existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email,
+                    existingUser.Phone, existingUser.Role.ToString(), existingUser.StudentType?.ToString(),
+                    existingUser.IsActive, existingUser.CreatedAt, existingUser.LastLoginAt, null, existingUser.PasswordHash.StartsWith("$2") ? null : existingUser.PasswordHash,
+                    existingUser.TcNo));
+                continue;
             }
 
             var user = new User
@@ -392,7 +457,7 @@ public class UserService : IUserService
                 Role = role,
                 StudentType = Enum.TryParse<StudentType>(req.StudentType, true, out var st) ? st : null,
                 DemoExpiresAt = req.DemoExpiresAt,
-                TcNo = req.TcNo
+                TcNo = tc
             };
 
             _context.Users.Add(user);
