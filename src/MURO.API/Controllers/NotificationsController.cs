@@ -50,7 +50,7 @@ public class NotificationsController : ControllerBase
 
     [HttpGet("unread-count")]
     public async Task<ActionResult<int>> GetUnreadCount()
-        => Ok(await _notificationService.GetUnreadCountAsync(GetUserId()));
+        => Ok(await _notificationService.GetUnreadCountAsync(GetTenantId(), GetUserId()));
 
     [HttpPost]
     public async Task<ActionResult<NotificationDto>> Create([FromBody] CreateNotificationRequest request)
@@ -74,5 +74,5 @@ public class NotificationsController : ControllerBase
 
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllRead()
-    { await _notificationService.MarkAllReadAsync(GetUserId()); return NoContent(); }
+    { await _notificationService.MarkAllReadAsync(GetTenantId(), GetUserId()); return NoContent(); }
 }

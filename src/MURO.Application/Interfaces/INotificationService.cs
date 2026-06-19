@@ -9,7 +9,7 @@ public interface INotificationService
     Task<NotificationDto> CreateAsync(Guid tenantId, CreateNotificationRequest request);
     Task<int> BulkSendAsync(Guid tenantId, BulkNotificationRequest request);
     Task MarkAsReadAsync(Guid notificationId);
-    Task MarkAllReadAsync(Guid userId);
-    Task<int> GetUnreadCountAsync(Guid userId);
+    Task MarkAllReadAsync(Guid tenantId, Guid userId);
+    Task<int> GetUnreadCountAsync(Guid tenantId, Guid userId);
     Task<List<NotificationAdminDto>> GetTenantSentAsync(Guid tenantId);
 }

@@ -152,33 +152,20 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task MarkAllReadAsync(Guid userId)
+    public async Task MarkAllReadAsync(Guid tenantId, Guid userId)
     {
-        // Tenant bilgisini kullanıcının ilk bildiriminden al
-        var tenantId = await _context.Notifications
-            .Where(n => n.UserId == userId)
-            .Select(n => n.TenantId)
-            .FirstOrDefaultAsync();
-
-        await _context.Notifications.Where(n => n.UserId == userId && !n.IsRead)
+        await _context.Notifications.Where(n => n.TenantId == tenantId && n.UserId == userId && !n.IsRead)
             .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
 
-        if (tenantId != default)
-            await _cache.RemoveByPrefixAsync($"{tenantId}:notifications:");
+        await _cache.RemoveByPrefixAsync($"{tenantId}:notifications:");
     }
 
-    public async Task<int> GetUnreadCountAsync(Guid userId)
+    public async Task<int> GetUnreadCountAsync(Guid tenantId, Guid userId)
     {
-        // Tenant-safe cache key: userId'den tenant'ı resolve et
-        var tenantId = await _context.Notifications
-            .Where(n => n.UserId == userId)
-            .Select(n => n.TenantId)
-            .FirstOrDefaultAsync();
-
         var cacheKey = $"{tenantId}:notifications:unread:{userId}";
         return await _cache.GetOrSetAsync(cacheKey, async () =>
         {
-            return await _context.Notifications.CountAsync(n => n.UserId == userId && !n.IsRead);
+            return await _context.Notifications.CountAsync(n => n.TenantId == tenantId && n.UserId == userId && !n.IsRead);
         }, TimeSpan.FromMinutes(1));
     }
 
