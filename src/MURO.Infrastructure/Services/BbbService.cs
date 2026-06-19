@@ -58,6 +58,7 @@ public class BbbService : IBbbService
             ["lockSettingsDisablePublicChat"]  = "false",
             // Kamera
             ["allowModsToEjectCameras"] = "true",
+            ["lockSettingsDisableCam"] = "true",
             ["meetingCameraCap"] = _config["Bbb:Defaults:MeetingCameraCap"] ?? "20",
             // Güvenlik & Layout
             ["lockSettingsLockedLayout"] = "true",
@@ -146,7 +147,17 @@ public class BbbService : IBbbService
 
         // Moderatör ekstra yetkiler alır
         if (options.IsModerator)
+        {
             parameters["joinViaHtml5"] = "true";
+        }
+        else
+        {
+            // Öğrenciler (Moderatör olmayanlar) için ses testini atla ve sadece dinleyici olarak başlat
+            parameters["userdata-bbb_skip_check_audio"] = "true";
+            parameters["userdata-bbb_listen_only_mode"] = "true";
+            // Kamerasını otomatik açmasın (Güvenlik)
+            parameters["userdata-bbb_auto_share_webcam"] = "false";
+        }
 
         var url = BuildUrl("join", parameters);
 
