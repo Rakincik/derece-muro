@@ -5,8 +5,11 @@ import { ToastProvider } from "@/components/toast";
 import { GlobalUploadProvider } from "@/components/ui/GlobalUploadManager";
 
 export const metadata: Metadata = {
-  title: "MURO — Admin Panel",
-  description: "MURO Uzaktan Eğitim Platformu Yönetim Paneli",
+  title: "Monopoluzem",
+  description: "Monopol Uzaktan Eğitim Platformu",
+  icons: {
+    icon: "/monopolfavicon.png",
+  },
 };
 
 export default function RootLayout({

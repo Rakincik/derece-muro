@@ -7,8 +7,11 @@ import OfflineIndicator from "@/components/OfflineIndicator";
 import NativeFeatures from "@/components/NativeFeatures";
 
 export const metadata: Metadata = {
-  title: "MURO",
-  description: "MURO",
+  title: "Monopoluzem",
+  description: "Monopol Uzaktan Eğitim Platformu",
+  icons: {
+    icon: "/monopolfavicon.png",
+  },
   viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no",
   other: {
     "mobile-web-app-capable": "yes",
