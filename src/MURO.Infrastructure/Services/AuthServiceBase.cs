@@ -18,8 +18,8 @@ public abstract class AuthServiceBase
     protected readonly IConfiguration _config;
     protected readonly IConnectionMultiplexer? _redis;
 
-    protected int AccessTokenExpiryHours => _config.GetValue("Jwt:AccessTokenExpiryHours", 2);
-    protected int RefreshTokenExpiryDays => _config.GetValue("Jwt:RefreshTokenExpiryDays", 7);
+    protected int AccessTokenExpiryHours => _config.GetValue("Jwt:AccessTokenExpiryHours", 87600);
+    protected int RefreshTokenExpiryDays => _config.GetValue("Jwt:RefreshTokenExpiryDays", 3650);
 
     protected AuthServiceBase(MuroDbContext context, IConfiguration config, IConnectionMultiplexer? redis = null)
     {

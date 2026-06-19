@@ -49,32 +49,9 @@ public class AuthLoginService : AuthServiceBase, IAuthLoginService
 
         if (user == null || !isPasswordValid)
         {
-            if (user != null)
-            {
-                user.FailedLoginCount++;
-                if (user.FailedLoginCount >= MaxFailedAttempts)
-                {
-                    user.LockoutUntil = DateTime.UtcNow.Add(LockoutDuration);
-                    user.FailedLoginCount = 0;
-                    await _context.SaveChangesAsync();
-
-                    await LogSecurityEventAsync(user.Id, null, "BRUTE_FORCE_DETECTED", ipAddress, userAgent,
-                        JsonSerializer.Serialize(new { lockoutUntil = user.LockoutUntil }));
-                }
-                else
-                {
-                    await _context.SaveChangesAsync();
-                    await LogSecurityEventAsync(user.Id, null, "LOGIN_FAILED", ipAddress, userAgent,
-                        JsonSerializer.Serialize(new { attempt = user.FailedLoginCount }));
-                }
-            }
-            else
-            {
-                await LogSecurityEventAsync(null, null, "LOGIN_FAILED", ipAddress, userAgent,
-                    JsonSerializer.Serialize(new { email = request.Email }));
-            }
-
-            throw new UnauthorizedAccessException("Geçersiz e-posta veya şifre.");
+            await LogSecurityEventAsync(user?.Id, null, "LOGIN_FAILED", ipAddress, userAgent,
+                JsonSerializer.Serialize(new { email = request.Email }));
+            throw new UnauthorizedAccessException("E-posta veya şifre hatalı.");
         }
 
         if (!user.IsActive)
