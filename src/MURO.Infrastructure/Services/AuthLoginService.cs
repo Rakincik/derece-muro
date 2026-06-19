@@ -13,7 +13,7 @@ namespace MURO.Infrastructure.Services;
 public class AuthLoginService : AuthServiceBase, IAuthLoginService
 {
     private const int MaxFailedAttempts = 5;
-    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(5);
 
     public AuthLoginService(MuroDbContext context, IConfiguration config, IConnectionMultiplexer? redis = null)
         : base(context, config, redis)
