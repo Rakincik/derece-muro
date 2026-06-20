@@ -30,7 +30,7 @@ public class AnalyticsService : IAnalyticsService
                 .Where(tm => tm.IsActive);
 
             var totalUsers       = await memberships.CountAsync();
-            var activeStudents   = await memberships.CountAsync(tm => tm.Role == UserRole.Student && tm.IsActive && tm.StudentType == StudentType.Active);
+            var activeStudents   = await memberships.CountAsync(tm => tm.Role == UserRole.Student && tm.IsActive && tm.StudentType != StudentType.Demo);
             var demoStudents     = await memberships.CountAsync(tm => tm.Role == UserRole.Student && tm.StudentType == StudentType.Demo);
             var totalCourses     = await _context.Courses.CountAsync(c => true);
             var publishedCourses = await _context.Courses.CountAsync(c => c.IsPublished);
@@ -416,5 +416,73 @@ public class AnalyticsService : IAnalyticsService
                 totalWatchedMinutes, attendedThisMonth, totalSessionsThisMonth,
                 attendanceRate, completedVideos, consecutiveDays, avgExamNet, continueWatching, weeklyActivity);
         }, TimeSpan.FromMinutes(3));
+    }
+
+    // ── Admin Dashboard (Charts & KPIs) ──────────────────────────────────────
+    public async Task<AdminDashboardDto> GetAdminDashboardAsync()
+    {
+        var cacheKey = $"analytics:admin_dashboard";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var now = DateTime.UtcNow;
+            var sevenDaysAgo = now.Date.AddDays(-6);
+            
+            // 1. TotalVideosWatched
+            var totalVideosWatched = await _context.VideoProgresses.AsNoTracking().CountAsync(vp => vp.CompletedAt != null);
+
+            // 2. WeeklyActivity
+            var turkishDays = new[] { "Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt" };
+            
+            var videoStatsThisWeek = await _context.VideoProgresses.AsNoTracking()
+                .Where(vp => vp.UpdatedAt >= sevenDaysAgo)
+                .GroupBy(vp => vp.UpdatedAt.Date)
+                .Select(g => new { Date = g.Key, VideoMinutes = (int)(g.Sum(vp => (long)vp.WatchedSeconds) / 60) })
+                .ToListAsync();
+
+            var sessionStatsThisWeek = await _context.SessionAttendances.AsNoTracking()
+                .Where(sa => sa.JoinedAt >= sevenDaysAgo)
+                .GroupBy(sa => sa.JoinedAt.Date)
+                .Select(g => new { Date = g.Key, Sessions = g.Count(a => a.DurationMinutes > 0) })
+                .ToListAsync();
+
+            var weeklyActivity = Enumerable.Range(0, 7).Select(i =>
+            {
+                var date = sevenDaysAgo.AddDays(i);
+                var mins = videoStatsThisWeek.FirstOrDefault(d => d.Date == date)?.VideoMinutes ?? 0;
+                var sessions = sessionStatsThisWeek.FirstOrDefault(d => d.Date == date)?.Sessions ?? 0;
+                return new AdminWeeklyActivityDto(turkishDays[(int)date.DayOfWeek], mins, sessions);
+            }).ToList();
+
+            // 3. TopCourses
+            var topCourses = await _context.Courses.AsNoTracking()
+                .Select(c => new AdminTopCourseDto(
+                    c.Id,
+                    c.Title,
+                    c.CourseGroups.SelectMany(cg => cg.Group.Members).Select(m => m.UserId).Distinct().Count(),
+                    0
+                ))
+                .OrderByDescending(c => c.StudentCount)
+                .Take(5)
+                .ToListAsync();
+
+            // 4. TopStudents
+            var topStudents = await _context.Users.AsNoTracking()
+                .Where(u => u.Role == UserRole.Student)
+                .Select(u => new AdminTopStudentDto(
+                    u.Id,
+                    u.FirstName + " " + u.LastName,
+                    u.ExamResults.Any() ? u.ExamResults.Average(er => er.Score) : 0
+                ))
+                .OrderByDescending(u => u.Score)
+                .Take(5)
+                .ToListAsync();
+
+            return new AdminDashboardDto(
+                totalVideosWatched,
+                weeklyActivity,
+                topCourses,
+                topStudents
+            );
+        }, TimeSpan.FromMinutes(5));
     }
 }

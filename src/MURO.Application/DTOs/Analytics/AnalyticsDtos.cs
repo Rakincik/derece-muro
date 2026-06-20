@@ -138,3 +138,31 @@ public record StudentDashboardSummaryDto(
     List<MURO.Application.DTOs.Courses.UpcomingSessionDto> UpcomingSessions,
     int UnreadNotificationCount
 );
+
+// ── Admin Dashboard (Charts & KPIs) ───────────────────────────────────────
+public record AdminDashboardDto(
+    int TotalVideosWatched,
+    List<AdminWeeklyActivityDto> WeeklyActivity,
+    List<AdminTopCourseDto> TopCourses,
+    List<AdminTopStudentDto> TopStudents
+);
+
+public record AdminWeeklyActivityDto(
+    string Day,
+    int VideoMinutes,
+    int Sessions
+);
+
+public record AdminTopCourseDto(
+    Guid CourseId,
+    string Title,
+    int StudentCount,
+    double AvgAttendance
+);
+
+public record AdminTopStudentDto(
+    Guid UserId,
+    string FullName,
+    double Score
+);
+

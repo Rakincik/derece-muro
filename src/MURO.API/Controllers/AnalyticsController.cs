@@ -39,6 +39,19 @@ public class AnalyticsController : ControllerBase
         }
     }
 
+    [HttpGet("admin-dashboard")]
+    public async Task<ActionResult<AdminDashboardDto>> GetAdminDashboard()
+    {
+        try
+        {
+            return Ok(await _analyticsService.GetAdminDashboardAsync());
+        }
+        catch
+        {
+            return Ok(new AdminDashboardDto(0, new List<AdminWeeklyActivityDto>(), new List<AdminTopCourseDto>(), new List<AdminTopStudentDto>()));
+        }
+    }
+
     [HttpGet("video-stats")]
     public async Task<ActionResult<List<VideoWatchStatsDto>>> GetVideoStats()
     {

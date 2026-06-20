@@ -195,6 +195,7 @@ public class UsersController : ControllerBase
                 u.Ad.Trim(),
                 u.Soyad?.Trim() ?? "",
                 u.Eposta?.Trim() ?? "", // Use the Eposta from Excel or empty
+                null, // Username will be generated if null
                 password,
                 phone,
                 role,

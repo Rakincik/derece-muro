@@ -16,4 +16,5 @@ public interface IAnalyticsService
     Task<StudentAcademicHistoryDto> GetStudentAcademicHistoryAsync(Guid studentId);
     Task<ScorecardSummaryDto> GetScorecardSummaryAsync();
     Task<StudentDashboardDto> GetStudentDashboardAsync(Guid userId);
+    Task<AdminDashboardDto> GetAdminDashboardAsync();
 }

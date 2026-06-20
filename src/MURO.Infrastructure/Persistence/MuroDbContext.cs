@@ -71,10 +71,11 @@ public class MuroDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // User — unique email
+        // User — unique email and username
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasIndex(u => u.Email).IsUnique();
+            entity.HasIndex(u => u.Email);
+            entity.HasIndex(u => u.Username).IsUnique();
             entity.Property(u => u.Role).HasConversion<string>();
             entity.Property(u => u.StudentType).HasConversion<string>();
         });

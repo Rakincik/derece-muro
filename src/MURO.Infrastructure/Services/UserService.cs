@@ -69,7 +69,7 @@ public class UserService : IUserService
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(u => new UserListDto(
-                    u.Id, u.FirstName, u.LastName, u.Email, u.Phone,
+                    u.Id, u.FirstName, u.LastName, u.Email, u.Username, u.Phone,
                     u.Role.ToString(), u.StudentType.HasValue ? u.StudentType.Value.ToString() : null,
                     u.IsActive, u.CreatedAt, u.LastLoginAt,
                     u.GroupMemberships
@@ -114,7 +114,7 @@ public class UserService : IUserService
             .ToListAsync();
 
         return new UserDetailDto(
-            user.Id, user.FirstName, user.LastName, user.Email, user.Phone,
+            user.Id, user.FirstName, user.LastName, user.Email, user.Username, user.Phone,
             user.Role.ToString(), user.StudentType?.ToString(), user.DemoExpiresAt,
             user.IsActive, user.CreatedAt, user.LastLoginAt,
             groups, courses,
@@ -143,25 +143,23 @@ public class UserService : IUserService
         var isStudent = role == UserRole.Student;
         var cleanedPhone = CleanPhoneNumber(request.Phone);
         
-        string email = request.Email;
-        if (string.IsNullOrWhiteSpace(email))
+        string email = request.Email?.Trim() ?? string.Empty;
+        string username = request.Username?.Trim() ?? string.Empty;
+        
+        if (string.IsNullOrWhiteSpace(username))
         {
             var baseUsername = ToEnglishUsername(request.FirstName, request.LastName);
-            email = baseUsername;
+            username = baseUsername;
             int suffix = 1;
-            while (await _context.Users.AnyAsync(u => u.Email == email))
+            while (await _context.Users.AnyAsync(u => u.Username == username))
             {
-                email = $"{baseUsername}{suffix}";
+                username = $"{baseUsername}{suffix}";
                 suffix++;
             }
         }
-        else
-        {
-            email = email.Trim();
-        }
 
         string password = request.Password;
-        if (isStudent)
+        if (isStudent && string.IsNullOrWhiteSpace(password))
         {
             var lastTwo = cleanedPhone != null && cleanedPhone.Length >= 2 
                 ? cleanedPhone.Substring(cleanedPhone.Length - 2) 
@@ -172,7 +170,8 @@ public class UserService : IUserService
         var tcCheck = request.TcNo?.Trim();
         var existingUser = await _context.Users.IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => 
-                u.Email == email || 
+                (!string.IsNullOrEmpty(email) && u.Email == email) || 
+                u.Username == username ||
                 (!string.IsNullOrEmpty(tcCheck) && u.TcNo == tcCheck) ||
                 (!string.IsNullOrEmpty(cleanedPhone) && u.Phone == cleanedPhone));
 
@@ -180,11 +179,13 @@ public class UserService : IUserService
         {
             // Kullanıcı zaten var — aktiflik durumunu kontrol et
             if (existingUser.IsActive)
-                throw new InvalidOperationException("Bu TC Kimlik numarası, Telefon veya E-posta adresi ile aktif bir kullanıcı zaten kayıtlı.");
+                throw new InvalidOperationException("Bu TC Kimlik numarası, Telefon, E-posta veya Kullanıcı Adı ile aktif bir kullanıcı zaten kayıtlı.");
 
             // Soft delete edilmiş — bilgileri güncelle ve tekrar aktif et
             existingUser.FirstName = request.FirstName;
             existingUser.LastName = request.LastName;
+            if (!string.IsNullOrEmpty(email)) existingUser.Email = email;
+            existingUser.Username = username;
             if (!string.IsNullOrEmpty(cleanedPhone)) existingUser.Phone = cleanedPhone;
             existingUser.PasswordHash = password;
             existingUser.Role = role;
@@ -194,12 +195,10 @@ public class UserService : IUserService
             existingUser.DemoExpiresAt = request.DemoExpiresAt;
             if (!string.IsNullOrEmpty(tcCheck)) existingUser.TcNo = tcCheck;
 
-
-
             await _context.SaveChangesAsync();
             await _cache.RemoveByPrefixAsync($"users:");
 
-            return new UserListDto(existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email,
+            return new UserListDto(existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email, existingUser.Username,
                 existingUser.Phone, existingUser.Role.ToString(), existingUser.StudentType?.ToString(),
                 existingUser.IsActive, existingUser.CreatedAt, existingUser.LastLoginAt, null, existingUser.PasswordHash.StartsWith("$2") ? null : existingUser.PasswordHash,
                 existingUser.TcNo);
@@ -212,6 +211,7 @@ public class UserService : IUserService
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = email,
+            Username = username,
             Phone = cleanedPhone,
             PasswordHash = password,
             Role = role,
@@ -225,7 +225,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"users:");
 
-        return new UserListDto(user.Id, user.FirstName, user.LastName, user.Email,
+        return new UserListDto(user.Id, user.FirstName, user.LastName, user.Email, user.Username,
             user.Phone, user.Role.ToString(), user.StudentType?.ToString(),
             user.IsActive, user.CreatedAt, user.LastLoginAt, null, user.PasswordHash.StartsWith("$2") ? null : user.PasswordHash,
             user.TcNo);
@@ -319,28 +319,30 @@ public class UserService : IUserService
                 }
                 generatedPhones.Add(cleanedPhone);
             }
+            
+            string username = req.Username?.Trim() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(email) && existingUser == null)
+            if (string.IsNullOrWhiteSpace(username) && existingUser == null)
             {
                 var baseUsername = ToEnglishUsername(req.FirstName, req.LastName);
-                email = baseUsername;
+                username = baseUsername;
                 int suffix = 1;
-                while (allDbEmails.Contains(email) || generatedEmails.Contains(email))
+                while (allDbEmails.Contains(username) || generatedEmails.Contains(username))
                 {
-                    email = $"{baseUsername}{suffix}";
+                    username = $"{baseUsername}{suffix}";
                     suffix++;
                 }
-                generatedEmails.Add(email);
+                generatedEmails.Add(username);
             }
-            else if (!string.IsNullOrEmpty(email) && existingUser == null)
+            else if (!string.IsNullOrEmpty(username) && existingUser == null)
             {
-                if (generatedEmails.Contains(email)) 
+                if (generatedEmails.Contains(username)) 
                 {
                     importResult.FailedCount++;
-                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = email, Status = "Başarısız", Reason = "Bu excel listesinde aynı E-posta mükerrer girilmiş" });
+                    importResult.Details.Add(new BulkImportItemResultDto { FirstName = req.FirstName, LastName = req.LastName, Email = email ?? "", Username = username, Status = "Başarısız", Reason = "Bu excel listesinde aynı Kullanıcı Adı mükerrer girilmiş" });
                     continue;
                 }
-                generatedEmails.Add(email);
+                generatedEmails.Add(username);
             }
 
             string password = req.Password;
@@ -362,12 +364,13 @@ public class UserService : IUserService
                         FirstName = req.FirstName, 
                         LastName = req.LastName, 
                         Email = email ?? existingUser.Email, 
+                        Username = username ?? existingUser.Username,
                         Status = "Başarılı", 
                         Reason = "Kullanıcı zaten sistemde kayıtlı." 
                     });
                     
                     results.Add(new UserListDto(
-                        existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email,
+                        existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email, existingUser.Username,
                         existingUser.Phone, existingUser.Role.ToString(), existingUser.StudentType?.ToString(),
                         existingUser.IsActive, existingUser.CreatedAt, existingUser.LastLoginAt, null, existingUser.PasswordHash.StartsWith("$2") ? null : existingUser.PasswordHash,
                         existingUser.TcNo));
@@ -377,6 +380,8 @@ public class UserService : IUserService
                 // Reactivate
                 existingUser.FirstName = req.FirstName;
                 existingUser.LastName = req.LastName;
+                if (!string.IsNullOrEmpty(email)) existingUser.Email = email;
+                if (!string.IsNullOrEmpty(username)) existingUser.Username = username;
                 if (!string.IsNullOrEmpty(cleanedPhone)) existingUser.Phone = cleanedPhone;
                 if (!string.IsNullOrEmpty(password)) existingUser.PasswordHash = password;
                 existingUser.Role = role;
@@ -387,10 +392,10 @@ public class UserService : IUserService
 
                 
                 importResult.ImportedCount++;
-                importResult.Details.Add(new BulkImportItemResultDto { UserId = existingUser.Id, FirstName = req.FirstName, LastName = req.LastName, Email = existingUser.Email, Status = "Başarılı", Reason = "Eski kayıt başarıyla aktifleştirildi" });
+                importResult.Details.Add(new BulkImportItemResultDto { UserId = existingUser.Id, FirstName = req.FirstName, LastName = req.LastName, Email = existingUser.Email, Username = existingUser.Username, Status = "Başarılı", Reason = "Eski kayıt başarıyla aktifleştirildi" });
                 
                 results.Add(new UserListDto(
-                    existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email,
+                    existingUser.Id, existingUser.FirstName, existingUser.LastName, existingUser.Email, existingUser.Username,
                     existingUser.Phone, existingUser.Role.ToString(), existingUser.StudentType?.ToString(),
                     existingUser.IsActive, existingUser.CreatedAt, existingUser.LastLoginAt, null, existingUser.PasswordHash.StartsWith("$2") ? null : existingUser.PasswordHash,
                     existingUser.TcNo));
@@ -403,6 +408,7 @@ public class UserService : IUserService
                 FirstName = req.FirstName,
                 LastName = req.LastName,
                 Email = email,
+                Username = username,
                 Phone = cleanedPhone,
                 PasswordHash = password,
                 Role = role,
@@ -415,10 +421,10 @@ public class UserService : IUserService
 
 
             importResult.ImportedCount++;
-            importResult.Details.Add(new BulkImportItemResultDto { UserId = user.Id, FirstName = req.FirstName, LastName = req.LastName, Email = email, Status = "Başarılı", Reason = "Başarıyla eklendi" });
+            importResult.Details.Add(new BulkImportItemResultDto { UserId = user.Id, FirstName = req.FirstName, LastName = req.LastName, Email = email, Username = username, Status = "Başarılı", Reason = "Başarıyla eklendi" });
 
             results.Add(new UserListDto(
-                user.Id, user.FirstName, user.LastName, user.Email,
+                user.Id, user.FirstName, user.LastName, user.Email, user.Username,
                 user.Phone, user.Role.ToString(), user.StudentType?.ToString(),
                 user.IsActive, user.CreatedAt, user.LastLoginAt, null, user.PasswordHash.StartsWith("$2") ? null : user.PasswordHash,
                 user.TcNo));
@@ -447,8 +453,14 @@ public class UserService : IUserService
         if (request.Email != null)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email && u.Id != userId))
-                throw new InvalidOperationException("Bu kullanıcı adı veya e-posta adresi zaten kullanılıyor.");
+                throw new InvalidOperationException("Bu e-posta adresi zaten kullanılıyor.");
             user.Email = request.Email;
+        }
+        if (request.Username != null)
+        {
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username && u.Id != userId))
+                throw new InvalidOperationException("Bu kullanıcı adı zaten kullanılıyor.");
+            user.Username = request.Username;
         }
         if (request.Phone != null) user.Phone = CleanPhoneNumber(request.Phone);
         
@@ -471,7 +483,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"users:");
 
-        return new UserListDto(user.Id, user.FirstName, user.LastName, user.Email,
+        return new UserListDto(user.Id, user.FirstName, user.LastName, user.Email, user.Username,
             user.Phone, user.Role.ToString(), user.StudentType?.ToString(),
             user.IsActive, user.CreatedAt, user.LastLoginAt, null, user.PasswordHash.StartsWith("$2") ? null : user.PasswordHash,
             user.TcNo);

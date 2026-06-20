@@ -23,7 +23,7 @@ public class AuthLoginService : AuthServiceBase, IAuthLoginService
     public async Task<AuthResponse> LoginAsync(LoginRequest request, string? ipAddress = null, string? userAgent = null)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email);
+            .FirstOrDefaultAsync(u => u.Email == request.Email || u.Username == request.Email);
 
         if (user?.LockoutUntil.HasValue == true && user.LockoutUntil > DateTime.UtcNow)
         {
@@ -148,6 +148,7 @@ public class AuthLoginService : AuthServiceBase, IAuthLoginService
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
+            Username = request.Email, // Register defaults username to email
             Phone = request.Phone,
             PasswordHash = request.Password,
             Role = UserRole.Student,

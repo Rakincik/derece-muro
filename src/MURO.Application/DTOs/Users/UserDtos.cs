@@ -5,6 +5,7 @@ public record UserListDto(
     string FirstName,
     string LastName,
     string Email,
+    string Username,
     string? Phone,
     string Role,
     string? StudentType,
@@ -21,6 +22,7 @@ public record UserDetailDto(
     string FirstName,
     string LastName,
     string Email,
+    string Username,
     string? Phone,
     string Role,
     string? StudentType,
@@ -41,6 +43,7 @@ public record CreateUserRequest(
     string FirstName,
     string LastName,
     string Email,
+    string? Username,
     string Password,
     string? Phone,
     string Role,
@@ -53,6 +56,7 @@ public record UpdateUserRequest(
     string? FirstName,
     string? LastName,
     string? Email,
+    string? Username,
     string? Password,
     string? Phone,
     string? Role,
@@ -81,6 +85,7 @@ public class BulkImportItemResultDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty; // "Başarılı" or "Başarısız"
     public string Reason { get; set; } = string.Empty;
 }

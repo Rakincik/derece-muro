@@ -6,7 +6,7 @@ export const analyticsApi = {
         const qs = new URLSearchParams();
         if (params?.from) qs.set('from', params.from);
         if (params?.to) qs.set('to', params.to);
-        return api<AdminDashboardDto>(`/analytics/dashboard?${qs}`, { token, tenantId });
+        return api<AdminDashboardDto>(`/analytics/admin-dashboard?${qs}`, { token, tenantId });
     },
     export: (token: string, tenantId: string, format: 'pdf' | 'excel', from?: string, to?: string) => {
         const qs = new URLSearchParams({ format });
@@ -17,4 +17,3 @@ export const analyticsApi = {
 };
 
 // ── Upload API ────────────────────────────────────────────────────────────────
-

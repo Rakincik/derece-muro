@@ -6,7 +6,7 @@ import {
     GraduationCap, Briefcase, Mail, Phone, Calendar as CalendarIcon,
     BookOpen, ClipboardList, Activity, ToggleLeft, ToggleRight,
     KeyRound, Clock, TrendingUp, Award, BarChart3, ChevronUp, ChevronDown, Lock, RefreshCw, Copy,
-    ArrowLeft, Flame, Target, CreditCard, Eye, Zap, MessageCircle, AlertTriangle, ExternalLink
+    ArrowLeft, Flame, Target, CreditCard, Eye, EyeOff, Zap, MessageCircle, AlertTriangle, ExternalLink
 } from "lucide-react";
 import { API_URL } from "@/lib/api/core";
 import { KpiGrid } from "@/components/ui/KpiGrid";
@@ -211,10 +211,12 @@ export default function UsersPage() {
     const [resetPwModalOpen, setResetPwModalOpen] = useState<{id: string, name: string} | null>(null);
     const [manualPw, setManualPw] = useState('');
     const [resetPwLoading, setResetPwLoading] = useState(false);
+    const [showQuickPw, setShowQuickPw] = useState(false);
 
     const handleQuickReset = (u: any) => {
         setResetPwModalOpen({ id: u.id, name: `${u.firstName} ${u.lastName}` });
         setManualPw('');
+        setShowQuickPw(false);
     };
 
     const handleSaveNewPassword = async () => {
@@ -268,13 +270,16 @@ export default function UsersPage() {
                 <div className="relative mb-8 text-left">
                     <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
                     <input 
-                        type="text" 
+                        type={showQuickPw ? "text" : "password"} 
                         value={manualPw} 
                         onChange={e => setManualPw(e.target.value)}
                         placeholder="Yeni şifre..."
                         autoFocus
-                        className="w-full pl-11 pr-4 py-3.5 text-sm font-bold bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0] transition-all shadow-inner"
+                        className="w-full pl-11 pr-11 py-3.5 text-sm font-bold bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0] transition-all shadow-inner"
                     />
+                    <button type="button" onClick={() => setShowQuickPw(!showQuickPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A0AEC0] hover:text-[#0A1931] transition-colors">
+                        {showQuickPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={() => setResetPwModalOpen(null)} className="flex-1 py-3.5 bg-white border border-[#E2E8F0] text-[#475569] text-xs font-bold rounded-xl hover:bg-[#F8FAFC] transition-colors shadow-sm">
@@ -376,7 +381,7 @@ export default function UsersPage() {
                                 return (
                                     <tr key={u.id} onClick={() => setDetailUser(u)} className={`border-b border-[#E2E8F0]/40 hover:bg-[#DCE5EF] transition-colors cursor-pointer ${rowBg}`}>
                                         <td className="px-4 py-3" onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSel(u.id)} className="w-4 h-4 rounded border-[#A0AEC0] text-[#0A1931]" /></td>
-                                        <td className="px-4 py-3"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${c.avatar} flex items-center justify-center text-white text-[10px] font-bold shadow-sm border border-white/10`}>{ini(u)}</div><div><p className="text-sm font-bold text-[#0A1931] tracking-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] text-[#A0AEC0] font-medium">{u.email}</p></div></div></td>
+                                        <td className="px-4 py-3"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${c.avatar} flex items-center justify-center text-white text-[10px] font-bold shadow-sm border border-white/10`}>{ini(u)}</div><div><p className="text-sm font-bold text-[#0A1931] tracking-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] text-[#A0AEC0] font-medium">{u.username || u.email}</p></div></div></td>
                                         <td className="px-4 py-3"><span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg ${c.bg} ${c.text}`}>{roleLabel[u.role] || u.role}</span></td>
                                         <td className="px-4 py-3">{u.groupNames.length > 0 ? <div className="relative group/grp inline-flex"><span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-lg bg-[#1B3B6F]/10 text-[#1B3B6F] border border-[#1B3B6F]/20 cursor-default"><Users size={12} className="text-[#A0AEC0]" />{u.groupNames.length}</span><div className="absolute left-0 top-full mt-1 z-50 hidden group-hover/grp:block"><div className="bg-[#0A1931] text-white rounded-xl shadow-2xl p-3 min-w-[160px] border border-[#1B3B6F]/30"><p className="text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0] mb-2">Gruplar</p><div className="space-y-1">{u.groupNames.map(g => <div key={g} className="text-[11px] font-medium px-2 py-1 rounded-lg bg-white/10">{g}</div>)}</div></div></div></div> : <span className="text-[11px] text-[#A0AEC0]">—</span>}</td>
                                         <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${u.isActive ? "text-emerald-600" : "text-[#A0AEC0]"}`}><span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? "bg-emerald-500" : "bg-[#A0AEC0]"}`} />{u.isActive ? "AKTİF" : "PASİF"}{u.studentType === "Demo" && <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-50 text-amber-600 font-bold ml-2">DEMO</span>}</span></td>
@@ -427,7 +432,7 @@ export default function UsersPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-[#0A1931] tracking-tight truncate">{u.firstName} {u.lastName}</p>
-                                                <p className="text-[11px] text-[#A0AEC0] font-medium truncate mt-0.5">{u.email}</p>
+                                                <p className="text-[11px] text-[#A0AEC0] font-medium truncate mt-0.5">{u.username || u.email}</p>
                                                 <div className="flex items-center gap-2 mt-1 text-[10px]">
                                                     <span className={`font-bold uppercase tracking-widest ${c.text}`}>{roleLabel[u.role] || u.role}</span>
                                                     <span className="text-[#E2E8F0]">•</span>
@@ -670,6 +675,7 @@ export default function UsersPage() {
         const toggleGroup = (g: string) => sF(p => ({ ...p, groupNames: p.groupNames.includes(g) ? p.groupNames.filter(x => x !== g) : [...p.groupNames, g] }));
 
         const [manualPw, setManualPw] = useState('');
+        const [showPw, setShowPw] = useState(false);
         const currentPassword = manualPw || undefined;
 
         const cleanPhone = (val: string) => {
@@ -739,9 +745,12 @@ export default function UsersPage() {
                             <label className="block text-xs font-medium text-[#1B3B6F]">{user ? "Şifre Sıfırla (Opsiyonel)" : "Şifre"}</label>
                             <div className="relative">
                                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
-                                <input type="text" value={manualPw} onChange={e => setManualPw(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2.5 text-sm bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0]"
+                                <input type={showPw ? "text" : "password"} value={manualPw} onChange={e => setManualPw(e.target.value)}
+                                    className="w-full pl-9 pr-11 py-2.5 text-sm bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0]"
                                     placeholder="Manuel şifre belirlemek için girin..." />
+                                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A0AEC0] hover:text-[#0A1931] transition-colors">
+                                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
                             </div>
                             {!user && (f.role === "Student" || f.role === "Öğrenci") && !manualPw && (
                                 <div className="text-xs bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-800 font-semibold flex items-center justify-between">

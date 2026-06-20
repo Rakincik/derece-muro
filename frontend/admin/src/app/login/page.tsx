@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { tenantApi, TenantBrandingDto } from "@/lib/api";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [branding, setBranding] = useState<TenantBrandingDto | null>(null);
@@ -110,14 +112,23 @@ export default function AdminLoginPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-[#A0AEC0] mb-1.5 uppercase tracking-wide">Şifre</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-[#1B3B6F]/15 border border-[#1B3B6F]/30 rounded-xl text-white placeholder-[#A9A9A9] focus:outline-none focus:ring-2 focus:ring-[#1B3B6F] focus:border-transparent transition-all text-sm"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 pr-12 bg-[#1B3B6F]/15 border border-[#1B3B6F]/30 rounded-xl text-white placeholder-[#A9A9A9] focus:outline-none focus:ring-2 focus:ring-[#1B3B6F] focus:border-transparent transition-all text-sm"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A0AEC0] hover:text-white transition-colors flex items-center justify-center p-1"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"

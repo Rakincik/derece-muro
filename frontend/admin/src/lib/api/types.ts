@@ -61,6 +61,7 @@ export interface UserDto {
     firstName: string;
     lastName: string;
     email: string;
+    username: string;
     phone: string | null;
     role: string;
     studentType: string | null;
@@ -523,7 +524,7 @@ export interface PagedUsersResult {
 }
 
 export interface CreateUserRequest {
-    firstName: string; lastName: string; email: string;
+    firstName: string; lastName: string; email: string; username?: string;
     password: string; role: string; studentType?: string; phone?: string;
 }
 

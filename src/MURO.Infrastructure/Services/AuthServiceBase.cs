@@ -105,7 +105,7 @@ public abstract class AuthServiceBase
     }
 
     protected static UserDto MapToDto(User user) => new(
-        user.Id, user.FirstName, user.LastName, user.Email, user.Phone,
+        user.Id, user.FirstName, user.LastName, user.Email, user.Username, user.Phone,
         user.Role.ToString(), user.StudentType?.ToString(), user.DemoExpiresAt,
         user.IsActive, user.CreatedAt,
         new List<UserTenantDto> { new UserTenantDto("monopol", "Monopol", "monopol", user.Role.ToString(), "Active", null) },
