@@ -50,14 +50,14 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
     "Sınav": "#0A1931",
     "Canlı Ders": "#1B3B6F",
     "Ödev": "#A9A9A9",
-    "Etkinlik": "#A0AEC0",
-};
-
 import CoursesPage from "./courses/page";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
     const { user, token, currentTenantId: tenantId } = useAuth();
+    const router = useRouter();
     const isInstructor = user?.role === "Instructor" || user?.tenants?.find((t: any) => t.tenantId === tenantId)?.role === "Instructor";
+    const isAccountant = user?.role === "Accountant" || user?.tenants?.find((t: any) => t.tenantId === tenantId)?.role === "Accountant";
 
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStatsDto>(FALLBACK_STATS);
@@ -67,6 +67,10 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (!token || !tenantId) return;
+        if (isAccountant) {
+            router.replace("/dashboard/accounting");
+            return;
+        }
         if (isInstructor) {
             setLoading(false);
             return;
