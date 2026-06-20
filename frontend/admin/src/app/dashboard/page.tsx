@@ -53,8 +53,12 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
     "Etkinlik": "#A0AEC0",
 };
 
+import CoursesPage from "./courses/page";
+
 export default function DashboardPage() {
-    const { token, currentTenantId: tenantId } = useAuth();
+    const { user, token, currentTenantId: tenantId } = useAuth();
+    const isInstructor = user?.role === "Instructor" || user?.tenants?.find((t: any) => t.tenantId === tenantId)?.role === "Instructor";
+
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStatsDto>(FALLBACK_STATS);
     const [dashboard, setDashboard] = useState<AdminDashboardDto | null>(null);
@@ -63,6 +67,10 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (!token || !tenantId) return;
+        if (isInstructor) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
 
         const now = new Date();
@@ -116,6 +124,10 @@ export default function DashboardPage() {
                 </div>
             </div>
         );
+    }
+
+    if (isInstructor) {
+        return <CoursesPage />;
     }
 
     return (
