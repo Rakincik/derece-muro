@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using MURO.API.Middleware;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
@@ -32,7 +32,11 @@ public class SupportController : ControllerBase
     [HttpGet("tickets")]
     public async Task<ActionResult<PagedResult<TicketListDto>>> GetTickets(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null)
-        => Ok(await _supportService.GetTicketsAsync(page, pageSize, status));
+    {
+        var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+        var userId = isAdmin ? (Guid?)null : GetUserId();
+        return Ok(await _supportService.GetTicketsAsync(page, pageSize, status, userId));
+    }
 
     [HttpGet("tickets/{id:guid}")]
     public async Task<ActionResult<TicketDetailDto>> GetTicket(Guid id)

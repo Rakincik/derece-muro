@@ -6,7 +6,7 @@ namespace MURO.Application.Interfaces;
 public interface ISupportService
 {
     // Tickets
-    Task<PagedResult<TicketListDto>> GetTicketsAsync(int page, int pageSize, string? status);
+    Task<PagedResult<TicketListDto>> GetTicketsAsync(int page, int pageSize, string? status, Guid? userId = null);
     Task<TicketDetailDto> GetTicketByIdAsync(Guid ticketId);
     Task<TicketListDto> CreateTicketAsync(Guid userId, CreateTicketRequest request);
     Task<TicketMessageDto> ReplyAsync(Guid ticketId, Guid senderId, ReplyTicketRequest request);

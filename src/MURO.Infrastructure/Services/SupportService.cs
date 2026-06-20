@@ -19,12 +19,15 @@ public class SupportService : ISupportService
         _cache = cache;
     }
 
-    public async Task<PagedResult<TicketListDto>> GetTicketsAsync(int page, int pageSize, string? status)
+    public async Task<PagedResult<TicketListDto>> GetTicketsAsync(int page, int pageSize, string? status, Guid? userId = null)
     {
-        var cacheKey = $"support:tickets:{page}:{pageSize}:{status}";
+        var cacheKey = $"support:tickets:{page}:{pageSize}:{status}:{userId}";
         return await _cache.GetOrSetAsync(cacheKey, async () =>
         {
             var query = _context.SupportTickets.AsNoTracking().Where(t => true);
+            if (userId.HasValue)
+                query = query.Where(t => t.UserId == userId.Value);
+            
             if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<TicketStatus>(status, true, out var ts))
                 query = query.Where(t => t.Status == ts);
 
@@ -42,13 +45,16 @@ public class SupportService : ISupportService
         }, TimeSpan.FromMinutes(3));
     }
 
-    public async Task<TicketDetailDto> GetTicketByIdAsync(Guid ticketId)
+    public async Task<TicketDetailDto> GetTicketByIdAsync(Guid ticketId, Guid? userId = null)
     {
-        var cacheKey = $"support:ticket:{ticketId}";
+        var cacheKey = $"support:ticket:{ticketId}:{userId}";
         return await _cache.GetOrSetAsync(cacheKey, async () =>
         {
-            var t = await _context.SupportTickets.AsNoTracking()
-                .Where(t => t.Id == ticketId )
+            var query = _context.SupportTickets.AsNoTracking().Where(t => t.Id == ticketId);
+            if (userId.HasValue)
+                query = query.Where(t => t.UserId == userId.Value);
+
+            var t = await query
                 .Include(t => t.User)
                 .Include(t => t.Messages.OrderBy(m => m.CreatedAt)).ThenInclude(m => m.Sender)
                 .FirstOrDefaultAsync()

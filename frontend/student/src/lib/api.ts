@@ -631,7 +631,7 @@ export interface StudentTicketDto {
 
 export const studentSupportApi = {
     list: async (token: string, tenantId: string): Promise<StudentTicketDto[]> => {
-        const data = await api<{ items: StudentTicketDto[] } | StudentTicketDto[] | unknown>('/support?pageSize=50', { token, tenantId });
+        const data = await api<{ items: StudentTicketDto[] } | StudentTicketDto[] | unknown>('/support/tickets?pageSize=50', { token, tenantId });
         if (Array.isArray(data)) return data;
         if (data && typeof data === 'object' && 'items' in (data as object)) return (data as { items: StudentTicketDto[] }).items ?? [];
         return [];
