@@ -94,11 +94,11 @@ public class BbbService : IBbbService
 
         try
         {
-            // Varsayılan PDF'i ezmek için base64 formatında boş bir txt dosyası gönderiyoruz
+            // Varsayılan sunumu 16:9 oranında boş bir PDF ile değiştiriyoruz (Geniş beyaz ekran)
             var xmlPayload = @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <modules>
   <module name=""presentation"">
-    <document name=""blank.txt"">IA==</document>
+    <document name=""blank.pdf"">JVBERi0xLjQKMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PiBlbmRvYmoKMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkc1szIDAgUl0+PiBlbmRvYmoKMyAwIG9iaiA8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAxOTIwIDEwODBdPj4gZW5kb2JqCnhyZWYKMCA0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU0IDAwMDAwIG4gCjAwMDAwMDAxMDUgMDAwMDAgbiAKdHJhaWxlciA8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxNzgKJSVFT0YK</document>
   </module>
 </modules>";
             var content = new StringContent(xmlPayload, System.Text.Encoding.UTF8, "application/xml");
