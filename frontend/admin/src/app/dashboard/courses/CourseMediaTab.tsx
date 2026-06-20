@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/toast";
 import { LibrarySelectorModal } from "@/components/ui/LibrarySelectorModal";
 import { ExamSelectorModal } from "@/components/ui/ExamSelectorModal";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export function getVideoPlaybackDetails(url: string) {
     if (!url) return { url: "", type: "video" as const };
@@ -361,13 +362,12 @@ export function CourseMediaTab({
                                 <h3 className="text-white font-bold text-lg tracking-tight drop-shadow-md">{activeVideo.title}</h3>
                                 <p className="text-white/70 text-xs mt-0.5 drop-shadow-md">{activeVideo.type === "video" ? "Video Kaydı" : "Canlı Ders Kaydı"}</p>
                             </div>
-                            <button 
+                            <Tooltip content="Kapat"><button 
                                 onClick={() => setActiveVideo(null)} 
                                 className="w-10 h-10 rounded-full bg-white/10 hover:bg-red-500 hover:scale-110 text-white flex items-center justify-center backdrop-blur-md transition-all shrink-0 border border-white/20"
-                                title="Kapat"
                             >
                                 <X size={20} />
-                            </button>
+                            </button></Tooltip>
                         </div>
                         
                         {/* Video Area */}
@@ -434,13 +434,12 @@ export function CourseMediaTab({
                                 )}
                                 
                                 {media.type === "Exam" ? (
-                                    <button 
+                                    <Tooltip content="Sınav"><button 
                                         disabled
                                         className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-inner bg-purple-50 text-purple-600"
-                                        title="Sınav"
                                     >
                                         <FileText size={24} />
-                                    </button>
+                                    </button></Tooltip>
                                 ) : media.type === "Session" ? (() => {
                                     const rec = recordings.find(r => r.sessionId === media.sessionId && (r.playbackUrl || r.hlsPath));
                                     const sess = sessions.find(s => s.id === media.sessionId);
@@ -597,13 +596,12 @@ export function CourseMediaTab({
 
                                 <div className="flex items-center gap-2">
                                     {isRecording && recording && onViewAttendance && (
-                                        <button 
+                                        <Tooltip content="Yoklama Gör"><button 
                                             onClick={() => onViewAttendance(recording.sessionId)}
                                             className="p-3 text-[#A0AEC0] hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
-                                            title="Yoklama Gör"
                                         >
                                             <Users size={18} />
-                                        </button>
+                                        </button></Tooltip>
                                     )}
                                     {!(media as any).isFake && (
                                         inlineDeleteConfirm === media.id ? (
@@ -642,20 +640,19 @@ export function CourseMediaTab({
                                                     </Link>
                                                 )}
                                                 {media.type === "Media" && media.mediaAssetId && (
-                                                    <button 
+                                                    <Tooltip content="Başlığı Düzenle"><button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setEditingTitle(media.mediaAsset?.title || "");
                                                             setEditingMediaId(media.id);
                                                         }}
                                                         className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                                                        title="Başlığı Düzenle"
                                                     >
                                                         <Edit2 size={18} />
-                                                    </button>
+                                                    </button></Tooltip>
                                                 )}
                                                 {media.type === "Session" && media.sessionId && (
-                                                    <button 
+                                                    <Tooltip content="Dersi Düzenle"><button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setEditingTitle(media.sessionTitle || "");
@@ -664,10 +661,9 @@ export function CourseMediaTab({
                                                             setEditingMediaId(media.id);
                                                         }}
                                                         className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                                                        title="Dersi Düzenle"
                                                     >
                                                         <Edit2 size={18} />
-                                                    </button>
+                                                    </button></Tooltip>
                                                 )}
                                                 <button 
                                                     onClick={(e) => {

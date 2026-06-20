@@ -71,6 +71,16 @@ import { Menu, X } from "lucide-react"; // Make sure to import X
 
 // ...
 
+const roleTranslations: Record<string, string> = {
+    "SuperAdmin": "Süper Admin",
+    "Admin": "Admin",
+    "Instructor": "Eğitmen",
+    "Assistant": "Asistan",
+    "Accountant": "Muhasebe",
+    "Student": "Öğrenci",
+    "Teacher": "Öğretmen"
+};
+
 export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose?: () => void }) {
     const pathname = usePathname();
     const { user, logout, currentTenantId, switchTenant } = useAuth();
@@ -257,7 +267,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose
                         <p className="text-[13px] font-semibold text-white truncate">
                             {user?.firstName} {user?.lastName}
                         </p>
-                        <p className="text-[11px] text-[#A9A9A9] truncate">{user?.role}</p>
+                        <p className="text-[11px] text-[#A9A9A9] truncate">{user?.role ? (roleTranslations[user.role] || user.role) : ""}</p>
                     </div>
                     <button
                         onClick={logout}

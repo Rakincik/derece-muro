@@ -12,6 +12,7 @@ import { VideoPlayerModal } from "@/components/ui/VideoPlayerModal";
 import { useGlobalUpload } from "@/components/ui/GlobalUploadManager";
 
 import { API_URL } from "@/lib/api";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const getFileUrl = (path: string | null) => {
     if (!path) return "";
@@ -611,9 +612,9 @@ export default function MediaLibraryPage() {
                                                         <td className="px-5 py-3 text-right">
                                                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 
-                                                                <button onClick={() => { setRenameTarget({ id: asset.id, type: 'asset', currentName: asset.title, currentTags: asset.tags || "" }); setNewName(asset.title); setNewTags(asset.tags || ""); setIsRenameModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg" title="Düzenle"><Edit2 size={16} /></button>
-                                                                <button onClick={() => handleOpenAssetCourseModal(asset)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Derse Tanımla"><BookOpen size={16} /></button>
-                                                                <button onClick={() => handleRemoveAsset(asset)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Sil"><Trash2 size={16} /></button>
+                                                                <Tooltip content="Düzenle"><button onClick={() => { setRenameTarget({ id: asset.id, type: 'asset', currentName: asset.title, currentTags: asset.tags || "" }); setNewName(asset.title); setNewTags(asset.tags || ""); setIsRenameModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg"><Edit2 size={16} /></button></Tooltip>
+                                                                <Tooltip content="Derse Tanımla"><button onClick={() => handleOpenAssetCourseModal(asset)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><BookOpen size={16} /></button></Tooltip>
+                                                                <Tooltip content="Sil"><button onClick={() => handleRemoveAsset(asset)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button></Tooltip>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -670,9 +671,9 @@ export default function MediaLibraryPage() {
                                                         )}
                                                     </div>
                                                     <div className="flex gap-0.5 md:gap-1 w-full justify-end border-t border-gray-50 pt-2 md:pt-3">
-                                                        <button onClick={() => { setRenameTarget({ id: asset.id, type: 'asset', currentName: asset.title, currentTags: asset.tags || "" }); setNewName(asset.title); setNewTags(asset.tags || ""); setIsRenameModalOpen(true); }} className="p-1.5 md:p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg" title="Düzenle"><Edit2 size={14} className="md:w-4 md:h-4" /></button>
-                                                        <button onClick={() => handleOpenAssetCourseModal(asset)} className="p-1.5 md:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Derse Tanımla"><BookOpen size={14} className="md:w-4 md:h-4" /></button>
-                                                        <button onClick={() => handleRemoveAsset(asset)} className="p-1.5 md:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Sil"><Trash2 size={14} className="md:w-4 md:h-4" /></button>
+                                                        <Tooltip content="Düzenle"><button onClick={() => { setRenameTarget({ id: asset.id, type: 'asset', currentName: asset.title, currentTags: asset.tags || "" }); setNewName(asset.title); setNewTags(asset.tags || ""); setIsRenameModalOpen(true); }} className="p-1.5 md:p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg"><Edit2 size={14} className="md:w-4 md:h-4" /></button></Tooltip>
+                                                        <Tooltip content="Derse Tanımla"><button onClick={() => handleOpenAssetCourseModal(asset)} className="p-1.5 md:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><BookOpen size={14} className="md:w-4 md:h-4" /></button></Tooltip>
+                                                        <Tooltip content="Sil"><button onClick={() => handleRemoveAsset(asset)} className="p-1.5 md:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="md:w-4 md:h-4" /></button></Tooltip>
                                                     </div>
                                                 </div>
                                             </div>

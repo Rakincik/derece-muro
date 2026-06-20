@@ -7,6 +7,7 @@ import { examApi, ExamListDto, ExamDetailDto } from "@/lib/api";
 import ExamFormModal, { ExamFormData } from "./ExamFormModal";
 import ExamDetail from "./ExamDetail";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const statusStyles: Record<string, { bg: string; text: string; dot: string }> = {
     Taslak: { bg: "bg-[#E2E8F0]/40", text: "text-[#1B3B6F]", dot: "bg-[#A0AEC0]" },
@@ -268,13 +269,12 @@ export default function ExamsPage() {
                                             <span className={`${ss.bg} ${ss.text} text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${ss.dot}`} /> {e.status}
                                             </span>
-                                            <button 
+                                            <Tooltip content="Sınavı Sil"><button 
                                                 onClick={(ev) => handleCardDelete(ev, e)}
                                                 className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Sınavı Sil"
                                             >
                                                 <Trash2 size={14} />
-                                            </button>
+                                            </button></Tooltip>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-2">

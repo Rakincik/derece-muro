@@ -20,6 +20,7 @@ import {
 } from "react-icons/pi";
 import { useAuth } from "@/contexts/AuthContext";
 import { examApi, type ExamListDto, type ExamResultSummaryDto, type ExamResultDto } from "@/lib/api";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 function scoreColor(score: number) {
     if (score >= 80) return "text-emerald-600";
@@ -327,7 +328,7 @@ function ExamResultPanel({ exam, onClose }: { exam: ExamListDto; onClose: () => 
                                                         <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${badge.cls}`}>{badge.label}</span>
                                                     </td>
                                                     <td className="px-2 py-2.5 text-center">
-                                                        <button onClick={() => setSelectedStudent(r)} className="p-1.5 rounded-lg bg-[#E2E8F0]/30 hover:bg-[#1B3B6F] hover:text-white transition-colors text-[#1B3B6F]" title="Sınav Kağıdı"><FileText size={12} /></button>
+                                                        <Tooltip content="Sınav Kağıdı"><button onClick={() => setSelectedStudent(r)} className="p-1.5 rounded-lg bg-[#E2E8F0]/30 hover:bg-[#1B3B6F] hover:text-white transition-colors text-[#1B3B6F]"><FileText size={12} /></button></Tooltip>
                                                     </td>
                                                 </tr>
                                             );

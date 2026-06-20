@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/toast";
 import { BookOpen, Search, Plus, Trash2, Loader2, X, AlertCircle, Info, Calendar } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export function UserDirectCoursesTab({ userId }: { userId: string }) {
     const { token, currentTenantId: tenantId } = useAuth();
@@ -197,9 +198,9 @@ export function UserDirectCoursesTab({ userId }: { userId: string }) {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button onClick={() => setRemoveTarget(c)} className="p-2 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Kaldır">
+                                        <Tooltip content="Kaldır"><button onClick={() => setRemoveTarget(c)} className="p-2 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
                                             <Trash2 size={16} />
-                                        </button>
+                                        </button></Tooltip>
                                     </td>
                                 </tr>
                             ))}

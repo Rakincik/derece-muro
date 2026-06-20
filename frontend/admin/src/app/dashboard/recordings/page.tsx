@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { recordingApi, type RecordingDto } from "@/lib/api";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 // â”€â”€â”€ Status badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
@@ -89,9 +90,9 @@ function VideoPlayerModal({ rec, onClose }: { rec: RecordingDto; onClose: () => 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
             <div className="absolute top-6 right-6">
-                <button onClick={onClose} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all hover:scale-105 backdrop-blur-md border border-white/10" title="Kapat">
+                <Tooltip content="Kapat"><button onClick={onClose} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all hover:scale-105 backdrop-blur-md border border-white/10">
                     <X size={24} />
-                </button>
+                </button></Tooltip>
             </div>
 
             <div className="w-full max-w-6xl mx-auto px-6 flex flex-col items-center" onClick={e => e.stopPropagation()}>
@@ -292,21 +293,19 @@ export default function RecordingsPage() {
                                     <td className="px-5 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             {(r.status === "Ready" || r.status === "Published") && r.hlsPath ? (
-                                                <button onClick={() => setPlaying(r)}
-                                                    className="p-2 rounded-lg bg-[#E2E8F0]/30 hover:bg-[#E2E8F0]/40 text-[#1B3B6F] transition-colors"
-                                                    title="Oynat">
+                                                <Tooltip content="Oynat"><button onClick={() => setPlaying(r)}
+                                                    className="p-2 rounded-lg bg-[#E2E8F0]/30 hover:bg-[#E2E8F0]/40 text-[#1B3B6F] transition-colors">
                                                     <Play size={14} />
-                                                </button>
+                                                </button></Tooltip>
                                             ) : (
-                                                <button disabled className="p-2 rounded-lg bg-[#E2E8F0]/20 text-[#A0AEC0] cursor-not-allowed" title="Video hazÄ±r deÄŸil">
+                                                <Tooltip content="Video hazÄ±r deÄŸil"><button disabled className="p-2 rounded-lg bg-[#E2E8F0]/20 text-[#A0AEC0] cursor-not-allowed">
                                                     <Play size={14} />
-                                                </button>
+                                                </button></Tooltip>
                                             )}
-                                            <button onClick={() => setDeleteId(r.id)}
-                                                className="p-2 rounded-lg hover:bg-red-50 text-[#A0AEC0] hover:text-red-600 transition-colors"
-                                                title="Sil">
+                                            <Tooltip content="Sil"><button onClick={() => setDeleteId(r.id)}
+                                                className="p-2 rounded-lg hover:bg-red-50 text-[#A0AEC0] hover:text-red-600 transition-colors">
                                                 <Trash2 size={14} />
-                                            </button>
+                                            </button></Tooltip>
                                         </div>
                                     </td>
                                 </tr>

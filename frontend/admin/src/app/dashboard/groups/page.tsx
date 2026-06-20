@@ -36,6 +36,7 @@ import { groupsApi, courseApi, notificationApi, userApi, type GroupListDto, type
 import { PremiumTabs } from "@/components/ui/PremiumTabs";
 import { KpiGrid } from "@/components/ui/KpiGrid";
 import { BulkRegisterModal } from "./BulkRegisterModal";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 type DetailTab = "members" | "courses" | "settings";
 
@@ -79,20 +80,20 @@ function GroupTreeItem({
                     {group.educationType && <span className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-[5px] shadow-sm ${selected ? "bg-indigo-100 text-indigo-700 border border-indigo-200" : "bg-indigo-50 text-indigo-700 border border-indigo-100"}`}>{getEducationIcon(group.educationType, 12)} {group.educationType}</span>}
                 </div>
             </div>
-            {isEmpty && <span className={`text-amber-400 ${selected ? "opacity-100" : "opacity-80"}`} title="Boş grup"><AlertTriangle size={12} /></span>}
+            {isEmpty && <Tooltip content="Boş grup"><span className={`text-amber-400 ${selected ? "opacity-100" : "opacity-80"}`}><AlertTriangle size={12} /></span></Tooltip>}
             <div className="hidden group-hover:flex items-center gap-1">
-                <button onClick={e => { e.stopPropagation(); onAddSubgroup(); }}
-                    className="p-1.5 rounded-lg transition-colors text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50" title="Alt Grup Ekle">
+                <Tooltip content="Alt Grup Ekle"><button onClick={e => { e.stopPropagation(); onAddSubgroup(); }}
+                    className="p-1.5 rounded-lg transition-colors text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50">
                     <Plus size={12} />
-                </button>
-                <button onClick={e => { e.stopPropagation(); onEdit(); }}
-                    className="p-1.5 rounded-lg transition-colors text-[#A0AEC0] hover:text-[#1B3B6F] hover:bg-[#E2E8F0]/50" title="Düzenle">
+                </button></Tooltip>
+                <Tooltip content="Düzenle"><button onClick={e => { e.stopPropagation(); onEdit(); }}
+                    className="p-1.5 rounded-lg transition-colors text-[#A0AEC0] hover:text-[#1B3B6F] hover:bg-[#E2E8F0]/50">
                     <Edit3 size={12} />
-                </button>
-                <button onClick={e => { e.stopPropagation(); onDelete(); }}
-                    className="p-1.5 rounded-lg transition-colors text-[#A0AEC0] hover:text-red-600 hover:bg-red-50" title="Sil">
+                </button></Tooltip>
+                <Tooltip content="Sil"><button onClick={e => { e.stopPropagation(); onDelete(); }}
+                    className="p-1.5 rounded-lg transition-colors text-[#A0AEC0] hover:text-red-600 hover:bg-red-50">
                     <Trash2 size={12} />
-                </button>
+                </button></Tooltip>
             </div>
         </div>
     );
@@ -553,8 +554,8 @@ export default function GroupsPage() {
                                         <h2 className="text-lg font-black text-[#0A1931] tracking-tight">{detail.name}</h2>
                                         
                                         <div className="flex items-center gap-1.5 ml-1">
-                                            <button onClick={() => { setCloneGroupName(`${detail.name} (Kopya)`); setCloneGroupMembers(true); setCloneGroupCourses(true); setCloneGroupOpen(true); }}
-                                                className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1" title="Grubu Kopyala"><Copy size={12} /> Kopyala</button>
+                                            <Tooltip content="Grubu Kopyala"><button onClick={() => { setCloneGroupName(`${detail.name} (Kopya)`); setCloneGroupMembers(true); setCloneGroupCourses(true); setCloneGroupOpen(true); }}
+                                                className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Copy size={12} /> Kopyala</button></Tooltip>
                                             <button onClick={() => openEdit(detail as unknown as GroupListDto)}
                                                 className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Edit3 size={12} /> Düzenle</button>
                                         </div>
@@ -612,18 +613,18 @@ export default function GroupsPage() {
                                             <div className="flex items-center gap-2">
                                                 {selectedMembers.size > 0 && (
                                                     <div className="flex items-center bg-[#E2E8F0]/30 rounded-lg overflow-hidden border border-[#E2E8F0] shadow-sm divide-x divide-[#E2E8F0]">
-                                                        <button onClick={() => setCopyOpen(true)} className="px-3 py-1.5 text-xs text-[#1B3B6F] font-bold hover:bg-white transition-colors" title="Kopyala / Aktar">
+                                                        <Tooltip content="Kopyala / Aktar"><button onClick={() => setCopyOpen(true)} className="px-3 py-1.5 text-xs text-[#1B3B6F] font-bold hover:bg-white transition-colors">
                                                             Aktar
-                                                        </button>
-                                                        <button onClick={() => setMoveOpen(true)} className="px-3 py-1.5 text-xs text-amber-600 font-bold hover:bg-amber-50 transition-colors" title="Taşı">
+                                                        </button></Tooltip>
+                                                        <Tooltip content="Taşı"><button onClick={() => setMoveOpen(true)} className="px-3 py-1.5 text-xs text-amber-600 font-bold hover:bg-amber-50 transition-colors">
                                                             Taşı
-                                                        </button>
-                                                        <button onClick={handleRemoveSelectedMembers} className="px-3 py-1.5 text-xs text-rose-500 font-bold hover:bg-rose-50 transition-colors" title="Gruptan Çıkar">
+                                                        </button></Tooltip>
+                                                        <Tooltip content="Gruptan Çıkar"><button onClick={handleRemoveSelectedMembers} className="px-3 py-1.5 text-xs text-rose-500 font-bold hover:bg-rose-50 transition-colors">
                                                             Gruptan Çıkar
-                                                        </button>
-                                                        <button onClick={() => setHardDeleteOpen(true)} className="px-3 py-1.5 text-xs text-red-600 font-bold hover:bg-red-100 transition-colors bg-red-50" title="Sistemden Tamamen Sil">
+                                                        </button></Tooltip>
+                                                        <Tooltip content="Sistemden Tamamen Sil"><button onClick={() => setHardDeleteOpen(true)} className="px-3 py-1.5 text-xs text-red-600 font-bold hover:bg-red-100 transition-colors bg-red-50">
                                                             İmha Et
-                                                        </button>
+                                                        </button></Tooltip>
                                                     </div>
                                                 )}
                                                 <button onClick={() => setBulkRegisterOpen(true)}

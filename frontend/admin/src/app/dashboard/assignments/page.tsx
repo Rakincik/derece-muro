@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { assignmentApi, courseApi, notificationApi, groupsApi, userApi, uploadApi, type AssignmentListDto, type AssignmentDetailDto, type SubmissionDto, type CourseListDto, type GroupListDto, type UserDto } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 // ── Grade Modal ──
 function GradeModal({ submission, maxScore, assignmentId, onClose, onGraded }: {
@@ -621,10 +622,10 @@ export default function AssignmentsPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                                            <button onClick={() => { setEditTarget(a); setShowForm(true); }} title="Düzenle"
-                                                className="p-1.5 rounded-lg hover:bg-amber-50 text-[#A0AEC0] hover:text-amber-600"><Edit3 size={15} /></button>
-                                            <button onClick={() => setDeleteTarget(a.id)} title="Sil"
-                                                className="p-1.5 rounded-lg hover:bg-red-50 text-[#A0AEC0] hover:text-red-600"><Trash2 size={15} /></button>
+                                            <Tooltip content="Düzenle"><button onClick={() => { setEditTarget(a); setShowForm(true); }}
+                                                className="p-1.5 rounded-lg hover:bg-amber-50 text-[#A0AEC0] hover:text-amber-600"><Edit3 size={15} /></button></Tooltip>
+                                            <Tooltip content="Sil"><button onClick={() => setDeleteTarget(a.id)}
+                                                className="p-1.5 rounded-lg hover:bg-red-50 text-[#A0AEC0] hover:text-red-600"><Trash2 size={15} /></button></Tooltip>
                                             <ChevronRight size={16} className="text-[#A0AEC0] group-hover:text-[#1B3B6F] transition-colors ml-1 hidden sm:block" />
                                         </div>
                                     </div>

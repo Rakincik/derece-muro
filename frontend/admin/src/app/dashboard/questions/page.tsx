@@ -9,6 +9,7 @@ import { useToast } from "@/components/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { questionApi, type QuestionDto } from "@/lib/api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Question {
     id: string;
@@ -237,10 +238,10 @@ export default function QuestionsPage() {
                                         <p className="text-xs text-[#A0AEC0] truncate">{selected.studentName} · {selected.course} · {selected.createdAt}</p>
                                     </div>
                                 </div>
-                                <button onClick={handleDeleteQuestion} title="Soruyu Komple Sil"
+                                <Tooltip content="Soruyu Komple Sil"><button onClick={handleDeleteQuestion}
                                     className="p-2 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0">
                                     <Trash2 size={16} />
-                                </button>
+                                </button></Tooltip>
                             </div>
 
                             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -273,10 +274,10 @@ export default function QuestionsPage() {
                                             <div className="bg-[#E2E8F0]/30 rounded-xl p-4">
                                                 <div className="flex items-center justify-between gap-2 mb-1">
                                                     <p className="text-xs font-semibold text-[#0A1931]">Eğitmen Yanıtı</p>
-                                                    <button onClick={handleDeleteAnswer} title="Cevabı Sil"
+                                                    <Tooltip content="Cevabı Sil"><button onClick={handleDeleteAnswer}
                                                         className="text-[#A0AEC0] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
                                                         <Trash2 size={14} />
-                                                    </button>
+                                                    </button></Tooltip>
                                                 </div>
                                                 <p className="text-sm text-[#1B3B6F]">{selected.answer}</p>
                                                 {selected.answeredAt && <p className="text-[10px] text-[#A0AEC0] mt-2">{selected.answeredAt}</p>}

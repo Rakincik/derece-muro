@@ -1,4 +1,4 @@
-import { ArrowLeft, Target, Shield, Users, Phone, MessageCircle, Mail, KeyRound, ToggleRight, ToggleLeft, Trash2, CalendarIcon, Clock, Copy, Briefcase, GraduationCap, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Target, Shield, Users, Phone, MessageCircle, Mail, KeyRound, ToggleRight, ToggleLeft, Trash2, CalendarIcon, Clock, Copy, Briefcase, GraduationCap, MoreHorizontal, Edit3, Building, ShieldCheck } from "lucide-react";
 import { UserDirectCoursesTab } from "./UserDirectCoursesTab";
 import { RoleSelect } from "./RoleSelect";
 import { useState, useRef, useEffect } from "react";
@@ -37,10 +37,11 @@ interface UserDetailProps {
     onChangeRole: (id: string, role: string) => void;
     onDelete: (id: string) => void;
     onQuickReset: (user: User) => void;
+    onEdit?: (user: User) => void;
     canEdit?: boolean;
 }
 
-export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDelete, onQuickReset, canEdit = true }: UserDetailProps) {
+export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDelete, onQuickReset, onEdit, canEdit = true }: UserDetailProps) {
     const { success } = useToast();
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
     const [confirmRoleChange, setConfirmRoleChange] = useState<string | null>(null);
@@ -98,6 +99,11 @@ export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDe
                                 <Target size={14} className="opacity-70"/> DEMO
                             </span>
                         )}
+                        {u.studentType === "Passive" && (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#A0AEC0]">
+                                <Target size={14} className="opacity-70"/> PASİF
+                            </span>
+                        )}
                         
                         {u.groupNames.slice(0, 3).map(g => (
                             <span key={g} className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-[#475569] shadow-sm">
@@ -142,6 +148,11 @@ export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDe
                 <div className="flex flex-wrap items-center gap-2">
                     {canEdit ? (
                         <>
+                            {onEdit && (
+                                <button onClick={() => onEdit(u)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-amber-600 text-xs font-bold whitespace-nowrap hover:bg-amber-50 transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm">
+                                    <Edit3 size={14} /> Düzenle
+                                </button>
+                            )}
                             <RoleSelect value={u.role} onChange={handleRoleChangeRequest} />
                             <div className="h-8 w-px bg-[#E2E8F0] mx-1 hidden md:block"></div>
                             <button onClick={() => onQuickReset(u)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[#1B3B6F] text-xs font-bold whitespace-nowrap hover:bg-[#F0F4F8] transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm">

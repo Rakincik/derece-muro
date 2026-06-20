@@ -34,7 +34,7 @@ public class QuestionsController : ControllerBase
         [FromQuery] string? status = null, [FromQuery] Guid? instructorId = null)
     {
         var role = User.FindFirstValue(ClaimTypes.Role);
-        if (role == "Instructor")
+        if (role?.Equals("Instructor", StringComparison.OrdinalIgnoreCase) == true)
         {
             instructorId = GetUserId();
         }
@@ -57,6 +57,15 @@ public class QuestionsController : ControllerBase
     [HttpPut("{id:guid}/answer")]
     public async Task<ActionResult<QuestionDto>> Answer(Guid id, [FromBody] AnswerQuestionRequest request)
     {
+        var role = User.FindFirstValue(ClaimTypes.Role);
+        if (role?.Equals("Instructor", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            // Verify ownership before answering
+            var existingQuestion = await _questionService.GetByIdAsync(id);
+            if (existingQuestion.InstructorId != GetUserId())
+                return Forbid();
+        }
+
         var q = await _questionService.AnswerAsync(id, request);
         await _jobQueue.EnqueueAsync(new AuditLogJob(GetUserId(), null, "Answer", "Question", id.ToString(), null, null, GetIp()));
         return Ok(q);
@@ -70,6 +79,14 @@ public class QuestionsController : ControllerBase
     [Authorize(Roles = "Admin,SuperAdmin,Instructor,Assistant")]
     public async Task<ActionResult<QuestionDto>> DeleteAnswer(Guid id)
     {
+        var role = User.FindFirstValue(ClaimTypes.Role);
+        if (role?.Equals("Instructor", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var existingQuestion = await _questionService.GetByIdAsync(id);
+            if (existingQuestion.InstructorId != GetUserId())
+                return Forbid();
+        }
+
         var q = await _questionService.DeleteAnswerAsync(id);
         await _jobQueue.EnqueueAsync(new AuditLogJob(GetUserId(), null, "DeleteAnswer", "Question", id.ToString(), null, null, GetIp()));
         return Ok(q);

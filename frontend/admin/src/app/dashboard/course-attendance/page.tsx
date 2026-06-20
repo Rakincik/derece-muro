@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { analyticsAdminApi, sessionApi, api, type CourseAttendanceDto } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface CourseSummary { id: string; title: string; }
 interface AttendeeRecord { userId: string; userFullName: string; isPresent: boolean; joinedAt: string; durationMinutes: number | null; }
@@ -217,13 +218,13 @@ export default function CourseAttendancePage() {
                                                                 {v === undefined ? (
                                                                     <div className="w-6 h-6 mx-auto rounded bg-[#E2E8F0]/20" />
                                                                 ) : v ? (
-                                                                    <div className="w-6 h-6 mx-auto rounded bg-emerald-100 flex items-center justify-center" title="Katıldı">
+                                                                    <Tooltip content="Katıldı"><div className="w-6 h-6 mx-auto rounded bg-emerald-100 flex items-center justify-center">
                                                                         <CheckCircle2 size={12} className="text-emerald-600" />
-                                                                    </div>
+                                                                    </div></Tooltip>
                                                                 ) : (
-                                                                    <div className="w-6 h-6 mx-auto rounded bg-red-100 flex items-center justify-center" title="Katılmadı">
+                                                                    <Tooltip content="Katılmadı"><div className="w-6 h-6 mx-auto rounded bg-red-100 flex items-center justify-center">
                                                                         <XCircle size={12} className="text-red-500" />
-                                                                    </div>
+                                                                    </div></Tooltip>
                                                                 )}
                                                             </td>
                                                         );

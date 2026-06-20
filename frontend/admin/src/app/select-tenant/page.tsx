@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Building2, ChevronRight, Shield, LogOut } from "lucide-react";
 
+const roleTranslations: Record<string, string> = {
+    "SuperAdmin": "Süper Admin",
+    "Admin": "Admin",
+    "Instructor": "Eğitmen",
+    "Assistant": "Asistan",
+    "Accountant": "Muhasebe",
+    "Student": "Öğrenci",
+    "Teacher": "Öğretmen"
+};
+
 export default function SelectTenantPage() {
     const { user, isLoading, currentTenantId, switchTenant, logout } = useAuth();
     const router = useRouter();
@@ -89,7 +99,7 @@ export default function SelectTenantPage() {
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1B3B6F]/20 border border-[#1B3B6F]/30 mb-6">
                         <Shield size={14} className="text-[#A0AEC0]" />
                         <span className="text-xs font-medium text-[#A0AEC0] uppercase tracking-wider">
-                            {user.role === "SuperAdmin" ? "Super Admin" : user.role}
+                            {user.role ? (roleTranslations[user.role] || user.role) : ""}
                         </span>
                     </div>
                     <h2 className="text-3xl font-black text-white mb-3 tracking-tight">
@@ -169,7 +179,7 @@ export default function SelectTenantPage() {
                                             color: colors.accent,
                                         }}
                                     >
-                                        {tenant.role}
+                                        {roleTranslations[tenant.role] || tenant.role}
                                     </span>
                                 </div>
 

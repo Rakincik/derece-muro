@@ -10,6 +10,7 @@ import { useToast } from "@/components/toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { podcastApi, PodcastDto, courseApi, CourseListDto } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const VOICES = [
     { value: "tr-TR-Chirp3-HD-Achird",    label: "Kaan (Erkek)",   gender: "male" },
@@ -124,11 +125,10 @@ function PodcastCard({
                 {/* Actions */}
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     {podcast.generatedScript && (
-                        <button onClick={() => setShowScript(s => !s)}
-                            className="p-2 rounded-lg hover:bg-blue-50 text-[#A0AEC0] hover:text-blue-600"
-                            title="Script'i göster">
+                        <Tooltip content="Script'i göster"><button onClick={() => setShowScript(s => !s)}
+                            className="p-2 rounded-lg hover:bg-blue-50 text-[#A0AEC0] hover:text-blue-600">
                             <FileText size={14} />
-                        </button>
+                        </button></Tooltip>
                     )}
                     <button onClick={() => onDelete(podcast.id)}
                         className="p-2 rounded-lg hover:bg-red-50 text-[#A0AEC0] hover:text-red-600">

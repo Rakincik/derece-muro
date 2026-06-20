@@ -91,14 +91,15 @@ public class NotificationService : INotificationService
         if (request.SendToAll)
         {
             userIds = await _context.Users.AsNoTracking()
-                .Where(tm => tm.IsActive)
+                .Where(tm => tm.IsActive && tm.Role == Domain.Enums.UserRole.Student)
                 .Select(tm => tm.Id)
                 .ToListAsync();
         }
         else if (request.GroupId.HasValue)
         {
             userIds = await _context.GroupMembers.AsNoTracking()
-                .Where(gm => gm.GroupId == request.GroupId.Value)
+                .Include(gm => gm.User)
+                .Where(gm => gm.GroupId == request.GroupId.Value && gm.User.Role == Domain.Enums.UserRole.Student)
                 .Select(gm => gm.UserId)
                 .ToListAsync();
         }
@@ -110,7 +111,8 @@ public class NotificationService : INotificationService
                 .ToListAsync();
                 
             userIds = await _context.GroupMembers.AsNoTracking()
-                .Where(gm => groupIds.Contains(gm.GroupId))
+                .Include(gm => gm.User)
+                .Where(gm => groupIds.Contains(gm.GroupId) && gm.User.Role == Domain.Enums.UserRole.Student)
                 .Select(gm => gm.UserId)
                 .Distinct()
                 .ToListAsync();
