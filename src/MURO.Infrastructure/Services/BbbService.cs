@@ -64,7 +64,7 @@ public class BbbService : IBbbService
             ["lockSettingsLockedLayout"] = "true",
             ["lockSettingsLockOnJoin"]   = "true",
             ["guestPolicy"]      = "ALWAYS_ACCEPT", // Öğrenciler onay beklemeden direkt girsin
-            ["meetingLayout"]    = "SMART_LAYOUT",
+            ["meetingLayout"]    = "CUSTOM_LAYOUT",
             
             // Kapasite & Süre
             ["maxParticipants"]  = _config["Bbb:Defaults:MaxParticipants"] ?? "200",
