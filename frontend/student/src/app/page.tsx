@@ -133,7 +133,10 @@ export default function StudentLoginPage() {
                 className="w-full px-4 py-3 bg-[#1B3B6F]/15 border border-[#1B3B6F]/30 rounded-xl text-white placeholder-[#A9A9A9] focus:outline-none focus:ring-2 focus:ring-[#1B3B6F] focus:border-transparent transition-all text-sm"
                 placeholder="Kullanıcı adınızı girin"
               />
-              <p className="mt-1.5 text-[11px] text-[#A0AEC0]/70 italic">* Lütfen Türkçe karakter kullanmayınız.</p>
+              <p className="mt-1.5 text-[11px] text-[#A0AEC0]/70 italic leading-relaxed">
+                * Kullanıcı adınızı girerken lütfen Türkçe karakter kullanmayınız. <br />
+                Örnek: İsim Soyisim Çağrı Özüşen, Kullanıcı Adı: cagriozusen
+              </p>
             </div>
             <div>
               <label className="block text-xs font-medium text-[#A0AEC0] mb-1.5 uppercase tracking-wide">Şifre</label>
