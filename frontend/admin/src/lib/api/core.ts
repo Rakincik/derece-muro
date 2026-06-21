@@ -63,7 +63,7 @@ export async function api<T = unknown>(
             || `HTTP ${response.status}`;
 
         if (typeof errMsg === "string" && (errMsg.trim().startsWith("<") || errMsg.toLowerCase().includes("<html"))) {
-            errMsg = "Sunucu ile bağlantı kurulamadı veya sistemsel bir hata oluştu. Lütfen birazdan tekrar deneyin.";
+            errMsg = "Sunucu ile bağlantı kurulamadı. Lütfen birazdan tekrar deneyin.";
         }
 
         if (response.status === 401 && errorData?.error === "SESSION_KICKED") {
