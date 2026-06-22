@@ -43,6 +43,7 @@ public static class ServiceExtensions
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<ILiveMeetingService, LiveMeetingService>();
+        services.AddScoped<IAccountingService, AccountingService>();
         
         services.AddScoped<IPodcastService, PodcastService>();
         services.AddScoped<ISessionAttendanceService, SessionAttendanceService>();

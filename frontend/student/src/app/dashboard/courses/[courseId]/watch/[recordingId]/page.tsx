@@ -71,7 +71,8 @@ export default function WatchPage() {
         if (!currentRec) return;
 
         watchTimerRef.current = setTimeout(() => {
-            markWatched(currentRec.id);
+            const targetId = currentRec.mediaAssetId || currentRec.id;
+            markWatched(targetId);
         }, 30000);
 
         return () => {
@@ -135,7 +136,8 @@ export default function WatchPage() {
                             createdAt: cm.createdAt,
                             scheduledStart: cm.sessionScheduledStart || undefined,
                             type: cm.type === 'Video' || cm.mediaAsset?.hlsPath ? 'Video' : 'Recording',
-                            videoUrl: matchSession?.videoUrl || null
+                            videoUrl: matchSession?.videoUrl || null,
+                            mediaAssetId: cm.mediaAssetId || matchRec?.mediaAssetId || null
                         };
                     });
 
@@ -152,10 +154,11 @@ export default function WatchPage() {
     // ── Load notes from backend when recording changes ──
     useEffect(() => {
         if (!currentRec || !token || !tenantId) return;
-        videoApi.getNotes(token, tenantId, currentRec.id)
+        const targetId = currentRec.mediaAssetId || currentRec.id;
+        videoApi.getNotes(token, tenantId, targetId)
             .then(fetchedNotes => { if (Array.isArray(fetchedNotes)) setNotes(fetchedNotes); })
             .catch(() => setNotes([]));
-    }, [currentRec?.id, token, tenantId]);
+    }, [currentRec?.id, currentRec?.mediaAssetId, token, tenantId]);
 
     // Navigate to next recording
     const playNext = useCallback(() => {
@@ -176,11 +179,12 @@ export default function WatchPage() {
         const text = noteText.trim();
         setNoteText("");
 
+        const targetId = currentRec.mediaAssetId || currentRec.id;
         // Optimistic local add
         const now = new Date().toISOString();
         const tempNote: VideoNoteDto = {
             id: crypto.randomUUID(),
-            mediaAssetId: currentRec.id,
+            mediaAssetId: targetId,
             timestampSeconds: 0,
             timestampFormatted: fmtClockTime(now),
             text,
@@ -190,7 +194,7 @@ export default function WatchPage() {
 
         // Persist to backend
         try {
-            const saved = await videoApi.addNote(token, tenantId, currentRec.id, 0, text);
+            const saved = await videoApi.addNote(token, tenantId, targetId, 0, text);
             if (saved?.id) {
                 setNotes(prev => prev.map(n => n.id === tempNote.id ? { ...saved, timestampFormatted: fmtClockTime(saved.createdAt) } : n));
             }

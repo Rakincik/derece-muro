@@ -42,7 +42,7 @@ public class MediaService : IMediaService
 
         if (courseId.HasValue) query = query.Where(m => m.CourseMedias.Any(cm => cm.CourseId == courseId));
         if (folderId.HasValue) query = query.Where(m => m.FolderId == folderId);
-        if (excludeRecordings) query = query.Where(m => !_context.SessionRecordings.Any(sr => sr.MediaAssetId == m.Id));
+        if (excludeRecordings) query = query.Where(m => !_context.SessionRecordings.Any(sr => sr.MediaAssetId == m.Id) && !m.Title.EndsWith(" - Kayıt"));
         
         if (!string.IsNullOrWhiteSpace(search))
         {

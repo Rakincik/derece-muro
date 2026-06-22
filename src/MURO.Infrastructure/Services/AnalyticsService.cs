@@ -345,9 +345,9 @@ public class AnalyticsService : IAnalyticsService
             var weekAgo = now.AddDays(-7);
             var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            // Fix #6: SQL'de topla, belleğe çekme
+            // Fix #6: SQL'de topla, belleğe çekme (Tüm Zamanlar)
             var totalWatchedSeconds = await _context.VideoProgresses.AsNoTracking()
-                .Where(vp => vp.UserId == userId && vp.UpdatedAt >= weekAgo )
+                .Where(vp => vp.UserId == userId)
                 .SumAsync(vp => (long)vp.WatchedSeconds);
             var totalWatchedMinutes = (int)(totalWatchedSeconds / 60);
 
@@ -357,9 +357,14 @@ public class AnalyticsService : IAnalyticsService
                 .ToListAsync();
             var attendedThisMonth = monthlyAttendance.Count;
 
-            // Toplam bu aydaki oturum sayısı (kursa atanan)
+            // Toplam bu aydaki oturum sayısı (SADECE öğrencinin kayıtlı olduğu kurslar için)
+            var enrolledCourseIds = await _context.CourseStudents.AsNoTracking()
+                .Where(e => e.UserId == userId)
+                .Select(e => e.CourseId)
+                .ToListAsync();
+
             var totalSessionsThisMonth = await _context.Sessions.AsNoTracking()
-                .Where(s => s.ScheduledStart >= monthStart && s.ScheduledStart <= now && !s.IsDeleted)
+                .Where(s => enrolledCourseIds.Contains(s.CourseId) && s.ScheduledStart >= monthStart && s.ScheduledStart <= now && !s.IsDeleted)
                 .CountAsync();
 
             var attendanceRate = totalSessionsThisMonth > 0

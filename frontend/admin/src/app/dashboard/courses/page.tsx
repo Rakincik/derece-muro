@@ -138,10 +138,11 @@ export default function CoursesPage() {
     const [recSortColumn, setRecSortColumn] = useState<"title" | "date" | "duration">("date");
     const [recSortDesc, setRecSortDesc] = useState(true);
     const [previewVideo, setPreviewVideo] = useState<{ url: string; type: "video" | "iframe"; title: string } | null>(null);
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [viewMode, setViewMode] = useState<"grid" | "list">("list");
     const [vodModalOpen, setVodModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortBy, setSortBy] = useState<"name" | "date" | "sessions" | "status">("date");
+    const [courseSortDesc, setCourseSortDesc] = useState(true);
     const [coursePage, setCoursePage] = useState(0);
     const [coursesPerPage, setCoursesPerPage] = useState(15);
 
@@ -404,18 +405,30 @@ export default function CoursesPage() {
         finally { setAttendanceLoading(false); }
     }, [token, tenantId]);
 
+    const handleSort = useCallback((col: "name" | "date" | "sessions" | "status") => {
+        if (sortBy === col) {
+            setCourseSortDesc(prev => !prev);
+        } else {
+            setSortBy(col);
+            setCourseSortDesc(true);
+        }
+    }, [sortBy]);
+
     const filtered = useMemo(() => {
         let result = courses.filter(c => {
-            const ms = !search || c.title.toLowerCase().includes(search.toLowerCase());
+            const ms = !search || c.title.toLocaleLowerCase('tr-TR').includes(search.toLocaleLowerCase('tr-TR'));
             const mst = statusFilter === "all" || (statusFilter === "published" ? c.isPublished : !c.isPublished);
             return ms && mst;
         });
-        if (sortBy === "name") result = [...result].sort((a, b) => a.title.localeCompare(b.title, "tr"));
-        else if (sortBy === "sessions") result = [...result].sort((a, b) => b.sessionCount - a.sessionCount);
-        else if (sortBy === "status") result = [...result].sort((a, b) => (a.isPublished === b.isPublished ? 0 : a.isPublished ? -1 : 1));
-        else result = [...result].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        if (sortBy === "name") result = [...result].sort((a, b) => courseSortDesc ? b.title.localeCompare(a.title, "tr") : a.title.localeCompare(b.title, "tr"));
+        else if (sortBy === "sessions") result = [...result].sort((a, b) => courseSortDesc ? b.sessionCount - a.sessionCount : a.sessionCount - b.sessionCount);
+        else if (sortBy === "status") result = [...result].sort((a, b) => {
+            const val = a.isPublished === b.isPublished ? 0 : a.isPublished ? -1 : 1;
+            return courseSortDesc ? val : -val;
+        });
+        else result = [...result].sort((a, b) => courseSortDesc ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt));
         return result;
-    }, [courses, search, statusFilter, sortBy]);
+    }, [courses, search, statusFilter, sortBy, courseSortDesc]);
 
     const totalCoursePages = Math.ceil(filtered.length / coursesPerPage);
     const pagedCourses = filtered.slice(coursePage * coursesPerPage, (coursePage + 1) * coursesPerPage);
@@ -878,10 +891,10 @@ export default function CoursesPage() {
                     data={pagedCourses}
                     keyExtractor={co => co.id}
                     desktopColumns={[
-                        <button key="name" onClick={() => setSortBy("name")} className="flex items-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-left uppercase">DERS ADI <ArrowUpDown size={12} className={sortBy === "name" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
-                        <button key="sessions" onClick={() => setSortBy("sessions")} className="flex items-center justify-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-center uppercase">OTURUM <ArrowUpDown size={12} className={sortBy === "sessions" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
-                        <button key="status" onClick={() => setSortBy("status")} className="flex items-center justify-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-center uppercase">DURUM <ArrowUpDown size={12} className={sortBy === "status" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
-                        <button key="date" onClick={() => setSortBy("date")} className="flex items-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-left uppercase">TARİH <ArrowUpDown size={12} className={sortBy === "date" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
+                        <button key="name" onClick={() => handleSort("name")} className="flex items-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-left uppercase">DERS ADI <ArrowUpDown size={12} className={sortBy === "name" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
+                        <button key="sessions" onClick={() => handleSort("sessions")} className="flex items-center justify-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-center uppercase">OTURUM <ArrowUpDown size={12} className={sortBy === "sessions" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
+                        <button key="status" onClick={() => handleSort("status")} className="flex items-center justify-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-center uppercase">DURUM <ArrowUpDown size={12} className={sortBy === "status" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
+                        <button key="date" onClick={() => handleSort("date")} className="flex items-center gap-1.5 hover:text-[#1B3B6F] transition-colors w-full text-left uppercase">OLUŞTURMA TARİHİ <ArrowUpDown size={12} className={sortBy === "date" ? "text-[#1B3B6F]" : "opacity-30"} /></button>,
                         <span key="actions" className="flex justify-end w-full uppercase">İŞLEM</span>
                     ]}
                     renderDesktopRow={co => (

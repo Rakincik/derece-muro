@@ -86,13 +86,23 @@ export default function Sidebar({ isOpen }: { isOpen?: boolean }) {
             className={`sidebar w-[280px] md:w-[260px] flex flex-col h-screen fixed left-0 top-0 z-[70] md:z-50 border-r border-[#1B3B6F]/20 bg-[#0A1931] transition-transform duration-300 md:translate-x-0 ${!isOpen ? "-translate-x-full" : ""}`}
             style={isOpen ? { transform: 'translateX(0)' } : undefined}
         >
-            {/* Logo + Tenant */}
-            <div className="px-6 py-7 flex items-center justify-center relative">
+            {/* Logo + Notifications */}
+            <div className="px-6 py-7 flex items-center justify-between relative">
                 <img 
                     src="/monopol_logo.png" 
                     alt={brandName} 
                     className="w-36 h-auto object-contain drop-shadow-md" 
                 />
+                <button
+                    onClick={() => setShowNotifications(true)}
+                    className="relative p-2 text-[#A0AEC0] hover:text-white hover:bg-[#1B3B6F]/30 rounded-xl transition-all"
+                    title="Bildirimler"
+                >
+                    <Bell size={20} />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#0A1931] shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse" />
+                    )}
+                </button>
             </div>
 
             {/* Nav */}

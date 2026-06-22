@@ -111,7 +111,12 @@ export default function StudentCalendarPage() {
         if (viewMode === "day") setSelectedDate(toDateStr(d));
     };
 
-    const goToday = () => { const now = new Date(); setCurrentDate(now); setSelectedDate(toDateStr(now)); };
+    const goToday = () => { 
+        const now = new Date(); 
+        setCurrentDate(now); 
+        setSelectedDate(toDateStr(now)); 
+        setViewMode("day");
+    };
 
     const cells: { day: number | null; date: string }[] = [];
     for (let i = 0; i < firstDay; i++) cells.push({ day: null, date: "" });

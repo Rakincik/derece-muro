@@ -60,7 +60,7 @@ export default function CourseDetailPage() {
 
     // ── Custom hooks — extracted player & notes state ──
     const player = useVideoPlayer(courseId, recordings, token, tenantId, activeTab);
-    const playerNotes = usePlayerNotes(player.selectedRec?.id ?? null, token, tenantId);
+    const playerNotes = usePlayerNotes(player.selectedRec?.mediaAssetId || player.selectedRec?.id || null, token, tenantId);
 
     // Aliases for backward compatibility with render code
     const { selectedRec, setSelectedRec, isFullscreen, toggleFullscreen, sidebarOpen, setSidebarOpen,
@@ -181,7 +181,8 @@ export default function CourseDetailPage() {
                         scheduledStart: cm.sessionScheduledStart || undefined,
                         type: cm.examId ? 'Exam' : (cm.type === 'Video' || cm.mediaAsset?.hlsPath ? 'Video' : 'Recording'),
                         examId: cm.examId || undefined,
-                        videoUrl: matchSession?.videoUrl || null
+                        videoUrl: matchSession?.videoUrl || null,
+                        mediaAssetId: cm.mediaAssetId || matchRec?.mediaAssetId || null
                     };
                 });
                 
@@ -667,12 +668,12 @@ export default function CourseDetailPage() {
                             </div>
                             <div className="glass-card p-5 text-center bg-gradient-to-br from-emerald-50 to-green-50">
                                 <Video size={20} className="mx-auto text-emerald-600 mb-2" />
-                                <p className="text-xl font-bold text-[#0A1931]">{videos.length}</p>
+                                <p className="text-xl font-bold text-[#0A1931]">{totalVideoCount}</p>
                                 <p className="text-[10px] text-[#A9A9A9] mt-0.5">Video</p>
                             </div>
                             <div className="glass-card p-5 text-center bg-gradient-to-br from-amber-50 to-orange-50">
                                 <CheckCircle2 size={20} className="mx-auto text-amber-600 mb-2" />
-                                <p className="text-xl font-bold text-[#0A1931]">{completedVideos.length}</p>
+                                <p className="text-xl font-bold text-[#0A1931]">{watchedCount}</p>
                                 <p className="text-[10px] text-[#A9A9A9] mt-0.5">Tamamladığın</p>
                             </div>
                         </div>

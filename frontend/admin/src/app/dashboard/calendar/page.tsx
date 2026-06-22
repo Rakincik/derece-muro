@@ -277,7 +277,7 @@ export default function CalendarPage() {
             ? `${weekDates[0].getDate()} – ${weekDates[6].getDate()} ${MONTHS_TR[weekDates[6].getMonth()]} ${weekDates[6].getFullYear()}`
             : `${MONTHS_TR[month]} ${year}`;
 
-    const filteredCourses = courses.filter(c => !courseSearch || c.title.toLowerCase().includes(courseSearch.toLowerCase()));
+    const filteredCourses = courses.filter(c => !courseSearch || c.title.toLocaleLowerCase('tr-TR').includes(courseSearch.toLocaleLowerCase('tr-TR')));
 
     const upcoming = useMemo(() => {
         const todayD = new Date(); todayD.setHours(0, 0, 0, 0);

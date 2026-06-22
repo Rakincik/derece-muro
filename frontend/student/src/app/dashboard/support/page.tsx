@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { studentSupportApi, type StudentTicketDto } from "@/lib/api";
 import {
     Headset, Search, Send, Plus, X, Tag, Clock,
-    MessageSquare, AlertCircle
+    MessageSquare, AlertCircle, ChevronDown, Check
 } from "lucide-react";
 
 const statusStyles: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -19,6 +19,64 @@ const statusStyles: Record<string, { bg: string; text: string; dot: string; labe
 
 function getStatusStyle(status: string) {
     return statusStyles[status] || { bg: "bg-[#E2E8F0]/40", text: "text-[#A9A9A9]", dot: "bg-[#A0AEC0]", label: status };
+}
+
+// ── Custom Category Select ───────────────────────────────────────────────────
+function CustomCategorySelect({ 
+    options, 
+    value, 
+    onChange 
+}: { 
+    options: string[], 
+    value: string, 
+    onChange: (val: string) => void 
+}) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-sm font-medium text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] focus:bg-white transition-all shadow-sm"
+            >
+                <span className={`block truncate ${value ? 'text-[#0A1931]' : 'text-[#A9A9A9]'}`}>
+                    {value || "Kategori Seçiniz..."}
+                </span>
+                <ChevronDown size={16} className={`text-[#A0AEC0] transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {open && (
+                <div className="absolute z-[200] w-full mt-1 bg-white border border-[#E2E8F0] rounded-xl shadow-xl overflow-hidden max-h-60 flex flex-col py-1">
+                    {options.map(opt => (
+                        <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                                onChange(opt);
+                                setOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${value === opt ? 'bg-[#F0F4FF] text-[#1B3B6F] font-bold' : 'text-[#5A6A7A] hover:bg-[#F8FAFC]'}`}
+                        >
+                            <span className="truncate pr-2">{opt}</span>
+                            {value === opt && <Check size={14} className="text-[#1B3B6F] shrink-0" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function SupportPage() {
@@ -297,8 +355,8 @@ export default function SupportPage() {
 
             {/* Create Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowForm(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0A1931]/60 transition-all" onClick={() => setShowForm(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="px-6 py-5 bg-gradient-to-br from-[#1B3B6F] to-[#0A1931] flex items-center justify-between relative overflow-hidden">
                             <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
                             <div className="flex items-center gap-3 relative z-10">
@@ -319,16 +377,11 @@ export default function SupportPage() {
                             <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm space-y-5">
                                 <div>
                                     <label className="text-[11px] font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5 block">Kategori <span className="text-red-500">*</span></label>
-                                    <select
+                                    <CustomCategorySelect 
+                                        options={["Teknik Sorun", "Ödeme İşlemleri", "Kayıt / Üyelik", "Diğer"]}
                                         value={form.category}
-                                        onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                                        className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-[#0A1931] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] focus:bg-white transition-all shadow-sm"
-                                    >
-                                        <option value="Teknik Sorun">Teknik Sorun</option>
-                                        <option value="Ödeme İşlemleri">Ödeme İşlemleri</option>
-                                        <option value="Kayıt / Üyelik">Kayıt / Üyelik</option>
-                                        <option value="Diğer">Diğer</option>
-                                    </select>
+                                        onChange={val => setForm(f => ({ ...f, category: val }))}
+                                    />
                                 </div>
 
                                 <div>

@@ -6,7 +6,8 @@ import { questionApi, courseApi, type QuestionDto, type CourseDto } from "@/lib/
 import { compressImage } from "@/lib/imageUtils";
 import {
     MessageSquare, Search, Send, Plus, X, Mic, MicOff, Trash2,
-    Image as ImageIcon, StickyNote, Upload, CheckCircle2, Clock, AlertCircle
+    Image as ImageIcon, StickyNote, Upload, CheckCircle2, Clock, AlertCircle,
+    ChevronDown, Check
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 
@@ -33,6 +34,87 @@ function mapQuestionStatus(status: string) {
     if (s === "answered") return "Yanıtlandı";
     if (s === "closed") return "Kapandı";
     return "Bekliyor";
+}
+
+// ── Custom Course Select ──────────────────────────────────────────────────────
+function CustomCourseSelect({ 
+    courses, 
+    value, 
+    onChange 
+}: { 
+    courses: CourseDto[], 
+    value: string, 
+    onChange: (id: string) => void 
+}) {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const selected = courses.find(c => c.id === value);
+    const filtered = courses.filter(c => c.title.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-sm font-medium text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] focus:bg-white transition-all shadow-sm"
+            >
+                <span className={`block truncate ${selected ? 'text-[#0A1931]' : 'text-[#A9A9A9]'}`}>
+                    {selected ? selected.title : "Lütfen bir ders seçiniz..."}
+                </span>
+                <ChevronDown size={16} className={`text-[#A0AEC0] transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {open && (
+                <div className="absolute z-[200] w-full mt-1 bg-white border border-[#E2E8F0] rounded-xl shadow-xl overflow-hidden max-h-60 flex flex-col">
+                    <div className="p-2 border-b border-[#E2E8F0] shrink-0 sticky top-0 bg-white z-10">
+                        <div className="relative">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
+                            <input
+                                type="text"
+                                placeholder="Ders ara..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#0A1931] placeholder-[#A0AEC0] focus:outline-none focus:border-[#1B3B6F]/50 transition-colors"
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto p-1 custom-scroll">
+                        {filtered.length === 0 ? (
+                            <div className="p-3 text-center text-xs text-[#A0AEC0]">Bulunamadı</div>
+                        ) : (
+                            filtered.map(c => (
+                                <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => {
+                                        onChange(c.id);
+                                        setOpen(false);
+                                        setSearch("");
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors flex items-center justify-between ${value === c.id ? 'bg-[#F0F4FF] text-[#1B3B6F] font-bold' : 'text-[#5A6A7A] hover:bg-[#F8FAFC]'}`}
+                                >
+                                    <span className="truncate pr-2">{c.title}</span>
+                                    {value === c.id && <Check size={14} className="text-[#1B3B6F] shrink-0" />}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 // ── Audio Recorder Hook ───────────────────────────────────────────────────────
@@ -491,8 +573,8 @@ export default function QuestionsPage() {
 
             {/* Ask Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => { setShowForm(false); audio.clear(); }}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0A1931]/60 transition-all" onClick={() => { setShowForm(false); audio.clear(); }}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         {/* Gradient Header */}
                         <div className="relative overflow-hidden px-6 py-5 bg-gradient-to-br from-[#1B3B6F] to-[#0A1931] shrink-0">
                             <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
@@ -516,17 +598,14 @@ export default function QuestionsPage() {
                         {/* Modal body */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-[#F8FAFC]">
                             <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm space-y-5">
-                                <div className="grid grid-cols-2 gap-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
                                         <label className="text-[11px] font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5 block">İlgili Ders <span className="text-red-500">*</span></label>
-                                        <select
+                                        <CustomCourseSelect 
+                                            courses={courses}
                                             value={form.courseId}
-                                            onChange={e => handleCourseChange(e.target.value)}
-                                            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-[#0A1931] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] focus:bg-white transition-all shadow-sm"
-                                        >
-                                            <option value="" disabled>Lütfen bir ders seçiniz...</option>
-                                            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                        </select>
+                                            onChange={handleCourseChange}
+                                        />
                                     </div>
                                     <div>
                                         <label className="text-[11px] font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5 block">Eğitmen</label>

@@ -322,6 +322,7 @@ export interface RecordingDto {
     type?: string;
     examId?: string;
     videoUrl?: string | null;
+    mediaAssetId?: string | null;
 }
 
 export interface CourseMediaDto {

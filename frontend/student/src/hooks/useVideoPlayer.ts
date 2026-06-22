@@ -128,9 +128,10 @@ export function useVideoPlayer(
                 totalSeconds: selectedRec.durationSeconds || 0,
                 lastPosition: elapsed,
             };
+            const targetId = selectedRec.mediaAssetId || selectedRec.id;
             // localStorage'a yaz — tab kapansa bile kaybolmasın
-            try { localStorage.setItem(`muro_progress_${selectedRec.id}`, JSON.stringify(payload)); } catch { }
-            videoApi.updateProgress(token, tenantId, selectedRec.id, payload).catch(() => { });
+            try { localStorage.setItem(`muro_progress_${targetId}`, JSON.stringify(payload)); } catch { }
+            videoApi.updateProgress(token, tenantId, targetId, payload).catch(() => { });
         };
 
         heartbeatRef.current = setInterval(sendProgress, 60_000);
@@ -145,9 +146,10 @@ export function useVideoPlayer(
                 totalSeconds: selectedRec.durationSeconds || 0,
                 lastPosition: elapsed,
             });
+            const targetId = selectedRec.mediaAssetId || selectedRec.id;
             // sendBeacon tab kapanırken bile isteği tamamlar
             navigator.sendBeacon?.(
-                `${apiBase}/videos/${selectedRec.id}/progress?t=${token}&tenant=${tenantId}`,
+                `${apiBase}/videos/${targetId}/progress?t=${token}&tenant=${tenantId}`,
                 new Blob([body], { type: "application/json" })
             );
         };
@@ -228,9 +230,10 @@ export function usePlayerNotes(
     }, [selectedRecId, token, tenantId]);
 
     const addNote = useCallback(async () => {
-        if (!noteText.trim() || !selectedRecId || !token || !tenantId) return;
+        const targetId = selectedRecId; // Already resolved to mediaAssetId in page.tsx / useVideoPlayer caller
+        if (!noteText.trim() || !targetId || !token || !tenantId) return;
         try {
-            const note = await videoApi.addNote(token, tenantId, selectedRecId, playerTime, noteText.trim());
+            const note = await videoApi.addNote(token, tenantId, targetId, playerTime, noteText.trim());
             setNotes(prev => [...prev, note].sort((a, b) => a.timestampSeconds - b.timestampSeconds));
             setNoteText("");
         } catch { /* ignore */ }

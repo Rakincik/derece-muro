@@ -51,7 +51,14 @@ function formatSessionDate(dateStr?: string) {
 
 function CustomCourseSelect({ courses, value, onChange, disabled }: { courses: CourseSummary[], value: string, onChange: (val: string) => void, disabled?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState("");
     const selected = courses.find(c => c.id === value);
+
+    const filteredCourses = useMemo(() => {
+        if (!search.trim()) return courses;
+        const s = search.toLowerCase();
+        return courses.filter(c => c.title.toLowerCase().includes(s));
+    }, [courses, search]);
 
     useEffect(() => {
         const handleClick = () => setIsOpen(false);
@@ -64,7 +71,7 @@ function CustomCourseSelect({ courses, value, onChange, disabled }: { courses: C
     return (
         <div className={`relative w-full sm:flex-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div 
-                onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+                onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearch(""); }}
                 className="px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-xl flex items-center justify-between cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all select-none"
             >
                 <span className="text-sm text-[#0A1931] font-medium truncate pr-4">
@@ -76,22 +83,42 @@ function CustomCourseSelect({ courses, value, onChange, disabled }: { courses: C
             {isOpen && (
                 <div 
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-[#E2E8F0] rounded-xl shadow-xl max-h-[300px] overflow-y-auto py-1 custom-scrollbar animate-in fade-in slide-in-from-top-2"
+                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-[#E2E8F0] rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 flex flex-col"
                 >
-                    {courses.map(c => (
-                        <div 
-                            key={c.id} 
-                            onClick={() => { onChange(c.id); setIsOpen(false); }}
-                            className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between
-                                ${c.id === value ? 'bg-blue-50/50 text-blue-700 font-bold' : 'text-[#0A1931] hover:bg-[#f8fafc]'}`}
-                        >
-                            <span className="truncate">{c.title}</span>
-                            {c.id === value && <Check size={16} className="text-blue-600 shrink-0 ml-3" />}
+                    <div className="p-2 border-b border-[#E2E8F0] bg-[#f8fafc]">
+                        <div className="relative">
+                            <input 
+                                type="text"
+                                autoFocus
+                                placeholder="Ders ara..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all text-[#0A1931]"
+                            />
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            </div>
                         </div>
-                    ))}
-                    {courses.length === 0 && (
-                        <div className="px-4 py-3 text-sm text-[#A0AEC0] text-center">Kurs bulunamadı</div>
-                    )}
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto py-1 custom-scrollbar">
+                        {filteredCourses.map(c => (
+                            <div 
+                                key={c.id} 
+                                onClick={() => { onChange(c.id); setIsOpen(false); }}
+                                className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between
+                                    ${c.id === value ? 'bg-blue-50/50 text-blue-700 font-bold' : 'text-[#0A1931] hover:bg-[#f8fafc]'}`}
+                            >
+                                <span className="truncate">{c.title}</span>
+                                {c.id === value && <Check size={16} className="text-blue-600 shrink-0 ml-3" />}
+                            </div>
+                        ))}
+                        {filteredCourses.length === 0 && (
+                            <div className="px-4 py-6 text-sm text-[#A0AEC0] text-center flex flex-col items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-20"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                <span>Aramanıza uygun ders bulunamadı.</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
