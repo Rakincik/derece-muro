@@ -233,7 +233,10 @@ export function BulkRegisterModal({ token, tenantId, preselectedGroupId, presele
                                             <p className="text-sm text-[#64748B] mb-6">Şablon dosyasını doldurup yükleyebilirsiniz.</p>
                                             
                                             <div className="bg-white p-5 rounded-2xl text-left border border-[#E2E8F0] shadow-sm space-y-3 max-w-md mx-auto">
-
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0"><Check size={12} strokeWidth={3} className="text-emerald-500" /></div> 
+                                                    <p className="text-xs text-[#64748B] font-medium leading-relaxed">Şifreler otomatik olarak <strong className="text-[#0A1931]">TC + Numaranın Son 2 Hanesi</strong> olarak atanır.</p>
+                                                </div>
                                                 <div className="flex items-start gap-3">
                                                     <div className="mt-0.5 w-5 h-5 rounded-full bg-rose-100 flex items-center justify-center shrink-0"><AlertTriangle size={12} strokeWidth={3} className="text-rose-500" /></div> 
                                                     <p className="text-xs text-[#64748B] font-medium leading-relaxed">Telefon numaralarını başında <strong className="text-rose-600">0 olmadan</strong> giriniz!</p>

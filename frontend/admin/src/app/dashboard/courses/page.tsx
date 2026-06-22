@@ -116,6 +116,7 @@ export default function CoursesPage() {
     const { success, error: toastError } = useToast();
     const { user, token, currentTenantId: tenantId } = useAuth();
     const isInstructor = user?.role === "Instructor" || user?.tenants?.find((t: any) => t.tenantId === tenantId)?.role === "Instructor";
+    const canJoinLive = ["Super Admin", "Admin", "Assistant", "Asistan", "Instructor", "Eğitmen"].includes(user?.role || "");
     const [courses, setCourses] = useState<MappedCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -289,6 +290,16 @@ export default function CoursesPage() {
         } catch { toastError("Hata", "BBB bağlantısı kurulamadı."); }
         finally { setActionLoading(null); }
     }, [token, tenantId, detail]);
+
+    const handleJoinSession = useCallback(async (courseId: string, sessionId: string) => {
+        if (!token || !tenantId) return;
+        setActionLoading(sessionId);
+        try {
+            const result = await sessionApi.join(token, tenantId, courseId, sessionId);
+            window.open(result.joinUrl, "_blank", "noopener");
+        } catch { toastError("Hata", "Derse katılınamadı."); }
+        finally { setActionLoading(null); }
+    }, [token, tenantId]);
 
     const handleEndSession = useCallback(async (courseId: string, sessionId: string) => {
         if (!token || !tenantId) return;
@@ -497,10 +508,18 @@ export default function CoursesPage() {
                             {(() => {
                                 const liveSession = c.sessions.find(s => s.status === "live");
                                 return liveSession ? (
-                                    <button onClick={() => handleEndSession(c.id, liveSession.id)} 
-                                        className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-[#E50914] text-white rounded-xl md:rounded-[1.25rem] hover:bg-red-700 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(229,9,20,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 border border-red-500/30">
-                                        <StopCircle size={16} className="animate-pulse" /> DERSİ SONLANDIR
-                                    </button>
+                                    <div className="flex flex-col gap-2 w-full">
+                                        {canJoinLive && (
+                                            <button onClick={() => handleJoinSession(c.id, liveSession.id)} 
+                                                className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-emerald-500 text-white rounded-xl md:rounded-[1.25rem] hover:bg-emerald-600 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 border border-emerald-400/30">
+                                                <Radio size={16} className="animate-pulse" /> DERSE KATIL
+                                            </button>
+                                        )}
+                                        <button onClick={() => handleEndSession(c.id, liveSession.id)} 
+                                            className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-[#E50914] text-white rounded-xl md:rounded-[1.25rem] hover:bg-red-700 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(229,9,20,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 border border-red-500/30">
+                                            <StopCircle size={16} /> DERSİ SONLANDIR
+                                        </button>
+                                    </div>
                                 ) : (
                                     <button onClick={() => setLiveStartModal({ courseId: c.id, courseName: c.title })} 
                                         className="w-full px-4 py-3 md:px-6 md:py-4 text-xs md:text-sm font-black bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl md:rounded-[1.25rem] hover:from-red-600 hover:to-rose-700 transition-all shadow-lg md:shadow-[0_8px_25px_rgba(239,68,68,0.35)] flex items-center justify-center gap-2 md:gap-2.5 active:scale-95 animate-pulse-slow border border-red-400/30">

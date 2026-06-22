@@ -604,9 +604,15 @@ export default function UsersPage() {
                                                 Excel dosyası (.xlsx) seçin
                                             </p>
                                             <p className="text-xs text-[#64748B] mb-5">Sütunlar: Ad, Soyad, TC, Telefon, Rol</p>
-                                            <div className="bg-[#F8FAFC] p-3.5 rounded-xl text-left border border-[#E2E8F0]/60 space-y-2">
-
-                                                <p className="text-[11px] text-rose-500 font-semibold flex items-start gap-2 leading-relaxed"><div className="mt-0.5 w-4 h-4 rounded-full bg-rose-100 flex items-center justify-center shrink-0"><AlertTriangle size={10} strokeWidth={3} /></div> Telefon numaralarını başında 0 olmadan giriniz!</p>
+                                            <div className="bg-[#F8FAFC] p-4 rounded-xl text-left border border-[#E2E8F0]/60 space-y-3">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0"><Check size={12} strokeWidth={3} className="text-emerald-500" /></div> 
+                                                    <p className="text-xs text-[#64748B] font-medium leading-relaxed">Şifreler otomatik olarak <strong className="text-[#0A1931]">TC + Numaranın Son 2 Hanesi</strong> olarak atanır.</p>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 w-5 h-5 rounded-full bg-rose-100 flex items-center justify-center shrink-0"><AlertTriangle size={12} strokeWidth={3} className="text-rose-500" /></div> 
+                                                    <p className="text-xs text-[#64748B] font-medium leading-relaxed">Telefon numaralarını başında <strong className="text-rose-600">0 olmadan</strong> giriniz!</p>
+                                                </div>
                                             </div>
                                         </>
                                     )}
@@ -688,12 +694,16 @@ export default function UsersPage() {
 
     function GroupDropdown({ groups, selected, onToggle }: { groups: string[]; selected: string[]; onToggle: (g: string) => void }) {
         const [open, setOpen] = useState(false);
+        const [search, setSearch] = useState("");
         const ref = useRef<HTMLDivElement>(null);
         useEffect(() => {
             const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
             document.addEventListener("mousedown", handler);
             return () => document.removeEventListener("mousedown", handler);
         }, []);
+
+        const filtered = groups.filter(g => g.toLowerCase().includes(search.toLowerCase()));
+
         return (
             <div ref={ref} className="relative">
                 <label className="block text-xs font-medium text-[#1B3B6F] mb-1.5">Gruplar</label>
@@ -705,17 +715,34 @@ export default function UsersPage() {
                     <ChevronDown size={16} className={`text-[#A0AEC0] transition-transform ${open ? 'rotate-180' : ''}`} />
                 </button>
                 {open && (
-                    <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white rounded-xl border border-[#E2E8F0] shadow-xl shadow-black/10 py-1 max-h-48 overflow-y-auto animate-fade-in">
-                        {groups.map(g => (
-                            <button key={g} type="button" onClick={() => onToggle(g)}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-[#E2E8F0]/30 transition-colors">
-                                <div className={`w-4.5 h-4.5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${selected.includes(g) ? 'bg-[#0A1931] border-[#0A1931]' : 'border-[#A0AEC0]'}`}
-                                    style={{ width: 18, height: 18 }}>
-                                    {selected.includes(g) && <Check size={12} className="text-white" />}
-                                </div>
-                                <span className={`text-sm ${selected.includes(g) ? 'font-bold text-[#0A1931]' : 'text-[#1B3B6F]'}`}>{g}</span>
-                            </button>
-                        ))}
+                    <div className="absolute z-[60] bottom-full mb-2 left-0 right-0 bg-white rounded-xl border border-[#E2E8F0] shadow-2xl shadow-black/10 flex flex-col animate-fade-in-up">
+                        <div className="p-2 border-b border-[#E2E8F0]">
+                            <div className="relative">
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
+                                <input 
+                                    type="text" 
+                                    value={search} 
+                                    onChange={e => setSearch(e.target.value)} 
+                                    placeholder="Grup ara..." 
+                                    className="w-full pl-8 pr-3 py-2 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0A1931]/20"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto p-1 custom-scrollbar">
+                            {filtered.length > 0 ? filtered.map(g => (
+                                <button key={g} type="button" onClick={() => onToggle(g)}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#F8FAFC] rounded-lg transition-colors">
+                                    <div className={`w-4.5 h-4.5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${selected.includes(g) ? 'bg-[#0A1931] border-[#0A1931]' : 'border-[#A0AEC0]'}`}
+                                        style={{ width: 18, height: 18 }}>
+                                        {selected.includes(g) && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <span className={`text-sm ${selected.includes(g) ? 'font-bold text-[#0A1931]' : 'text-[#1B3B6F]'}`}>{g}</span>
+                                </button>
+                            )) : (
+                                <p className="text-xs text-center text-[#A0AEC0] py-3">Sonuç bulunamadı</p>
+                            )}
+                        </div>
                     </div>
                 )}
                 {selected.length > 0 && (

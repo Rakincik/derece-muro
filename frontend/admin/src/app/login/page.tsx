@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Giriş başarısız.";
       if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
-        setError("Sunucuya bağlanılamıyor. API'nin çalıştığını kontrol edin.");
+        setError("Bağlantı hatası. Lütfen ağınızı kontrol edin.");
       } else {
         setError(msg);
       }
