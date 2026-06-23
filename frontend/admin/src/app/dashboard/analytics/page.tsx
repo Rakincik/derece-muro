@@ -324,7 +324,7 @@ export default function AnalyticsPage() {
                                             <p className="text-[10px] text-[#A0AEC0] flex items-center gap-0.5 justify-end"><Clock size={9} />{formatDuration(s.loginAt, s.logoutAt)}</p>
                                         </div>
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                                            <Link href={`/dashboard/users/${s.userId}`} className="flex items-center gap-1.5 bg-[#1B3B6F] text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-[#0A1931] hover:scale-105 transition-all shadow-md">
+                                            <Link href={`/dashboard/users?userId=${s.userId}`} className="flex items-center gap-1.5 bg-[#1B3B6F] text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-[#0A1931] hover:scale-105 transition-all shadow-md">
                                                 <User size={12} /> Profile Git
                                             </Link>
                                         </div>

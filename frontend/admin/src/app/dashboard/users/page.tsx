@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     Users, UserPlus, UserCheck, Search, Download, Upload, Trash2, Edit3,
     ChevronLeft, ChevronRight, X, Check, Shield, ArrowUpDown, ArrowUp, ArrowDown,
@@ -144,12 +145,32 @@ export default function UsersPage() {
             .then(res => setGroupOptions(res.items.map((g: any) => g.name)))
             .catch(() => {});
     }, [token, tenantId]);
+    const searchParams = useSearchParams();
     const [search, setSearch] = useState(""); const [roleFilter, setRoleFilter] = useState("all"); const [statusFilter, setStatusFilter] = useState("all"); const [groupFilter, setGroupFilter] = useState("all");
     const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const [selected, setSelected] = useState<Set<string>>(new Set());
     const [showAddModal, setShowAddModal] = useState(false); const [editUser, setEditUser] = useState<User | null>(null);
     const [detailUser, setDetailUser] = useState<User | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null); const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [sortField, setSortField] = useState<SortField>("name"); const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+    useEffect(() => {
+        const urlUserId = searchParams?.get("userId");
+        if (urlUserId && users.length > 0) {
+            const targetUser = users.find(u => u.id === urlUserId);
+            if (targetUser) {
+                setDetailUser(targetUser);
+            }
+        }
+    }, [searchParams, users]);
+
+    const handleCloseDetail = () => {
+        setDetailUser(null);
+        if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("userId");
+            window.history.pushState({}, "", url.toString());
+        }
+    };
 
     const filtered = useMemo(() => {
         let r = users.filter(u => {
@@ -358,10 +379,10 @@ export default function UsersPage() {
             <>
                 <UserDetail 
                     user={detailUser}
-                    onBack={() => setDetailUser(null)}
+                    onBack={handleCloseDetail}
                     onToggleActive={canEditUser(detailUser) ? toggleActive : undefined}
                     onChangeRole={canEditUser(detailUser) ? changeRole : undefined}
-                    onDelete={canEditUser(detailUser) ? async (id) => { await del(id); setDetailUser(null); } : undefined}
+                    onDelete={canEditUser(detailUser) ? async (id) => { await del(id); handleCloseDetail(); } : undefined}
                     onQuickReset={canEditUser(detailUser) ? handleQuickReset : undefined}
                     onEdit={canEditUser(detailUser) ? (u) => { setEditUser(u); setShowAddModal(true); } : undefined}
                     canEdit={canEditUser(detailUser)}
