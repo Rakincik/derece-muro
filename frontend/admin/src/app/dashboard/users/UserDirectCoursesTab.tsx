@@ -54,7 +54,7 @@ export function UserDirectCoursesTab({ userId, userRole }: { userId: string; use
         if (!removeTarget || !token || !tenantId) return;
         try {
             if (isInstructor) {
-                await courseApi.update(token, tenantId, removeTarget.id, { instructorId: null });
+                await courseApi.update(token, tenantId, removeTarget.id, { instructorId: "00000000-0000-0000-0000-000000000000" });
             } else {
                 await courseApi.removeStudent(token, tenantId, removeTarget.id, userId);
             }
@@ -230,11 +230,11 @@ export function UserDirectCoursesTab({ userId, userRole }: { userId: string; use
             )}
 
             <ConfirmDialog
-                isOpen={!!removeTarget}
+                open={!!removeTarget}
                 title="Dersi Kaldır"
                 message={<>{isInstructor ? "Eğitmenin" : "Öğrencinin"} <span className="font-bold text-[#0A1931]">{removeTarget?.title}</span> dersinden ilişiğini kesmek istediğinize emin misiniz?</>}
                 onConfirm={handleRemove}
-                onCancel={() => setRemoveTarget(null)}
+                onClose={() => setRemoveTarget(null)}
                 confirmText="Evet, Kaldır"
                 cancelText="İptal"
             />

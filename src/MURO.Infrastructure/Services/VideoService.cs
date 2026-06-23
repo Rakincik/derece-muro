@@ -40,6 +40,36 @@ public class VideoNoteService : IVideoNoteService
 
     public async Task<VideoNoteDto> AddNoteAsync(Guid userId, Guid mediaAssetId, CreateVideoNoteRequest request)
     {
+        var assetExists = await _context.MediaAssets.AnyAsync(m => m.Id == mediaAssetId);
+        if (!assetExists)
+        {
+            var cm = await _context.CourseMedias.Include(c => c.Session).FirstOrDefaultAsync(c => c.Id == mediaAssetId);
+            if (cm != null)
+            {
+                _context.MediaAssets.Add(new MediaAsset
+                {
+                    Id = mediaAssetId,
+                    CourseId = cm.CourseId,
+                    Title = cm.Session?.Title ?? "Ders Kaydı",
+                    Status = MURO.Domain.Enums.MediaStatus.Ready
+                });
+            }
+            else
+            {
+                var sr = await _context.SessionRecordings.Include(r => r.Session).FirstOrDefaultAsync(r => r.Id == mediaAssetId);
+                if (sr != null)
+                {
+                    _context.MediaAssets.Add(new MediaAsset
+                    {
+                        Id = mediaAssetId,
+                        CourseId = sr.Session.CourseId,
+                        Title = sr.Session.Title,
+                        Status = MURO.Domain.Enums.MediaStatus.Ready
+                    });
+                }
+            }
+        }
+
         var note = new VideoNote
         {
             Id = Guid.NewGuid(),
@@ -130,7 +160,38 @@ public class VideoProgressService : IVideoProgressService
         {
             // 🛡️ FK koruması: MediaAsset gerçekten var mı kontrol et
             var assetExists = await _context.MediaAssets.AnyAsync(m => m.Id == mediaAssetId);
-            if (!assetExists) return null; // Recording ID gelmiş olabilir — sessizce atla
+            if (!assetExists)
+            {
+                var cm = await _context.CourseMedias.Include(c => c.Session).FirstOrDefaultAsync(c => c.Id == mediaAssetId);
+                if (cm != null)
+                {
+                    _context.MediaAssets.Add(new MediaAsset
+                    {
+                        Id = mediaAssetId,
+                        CourseId = cm.CourseId,
+                        Title = cm.Session?.Title ?? "Ders Kaydı",
+                        Status = MURO.Domain.Enums.MediaStatus.Ready
+                    });
+                }
+                else
+                {
+                    var sr = await _context.SessionRecordings.Include(r => r.Session).FirstOrDefaultAsync(r => r.Id == mediaAssetId);
+                    if (sr != null)
+                    {
+                        _context.MediaAssets.Add(new MediaAsset
+                        {
+                            Id = mediaAssetId,
+                            CourseId = sr.Session.CourseId,
+                            Title = sr.Session.Title,
+                            Status = MURO.Domain.Enums.MediaStatus.Ready
+                        });
+                    }
+                    else
+                    {
+                        return null; // Gerçekten hiçbir karşılığı yoksa çık
+                    }
+                }
+            }
 
             progress = new VideoProgress
             {
@@ -156,6 +217,7 @@ public class VideoProgressService : IVideoProgressService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"videoprogress:{userId}:");
+        await _cache.RemoveByPrefixAsync($"student:dashboard:{userId}");
         return MapDto(progress);
     }
 

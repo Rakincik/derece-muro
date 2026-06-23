@@ -24,7 +24,7 @@ export default function ProfilePage() {
             return;
         }
         if (pwForm.next.length < 6) {
-            setPwStatus({ ok: false, msg: "Şifre en az 6 karakter olmalı." });
+            setPwStatus({ ok: false, msg: "Şifreniz en az 6 haneli olmalıdır." });
             return;
         }
         setSaving(true);
@@ -144,7 +144,7 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                     {([
                         { label: "Mevcut Şifre", key: "current" as const, placeholder: "••••••••" },
-                        { label: "Yeni Şifre", key: "next" as const, placeholder: "En az 6 karakter" },
+                        { label: "Yeni Şifre", key: "next" as const, placeholder: "En az 6 haneli" },
                         { label: "Yeni Şifre (Tekrar)", key: "confirm" as const, placeholder: "••••••••" },
                     ]).map(({ label, key, placeholder }) => (
                         <div key={key}>

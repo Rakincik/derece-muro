@@ -357,18 +357,22 @@ export function CourseMediaTab({
                     <div className="absolute inset-0 cursor-pointer" onClick={() => setActiveVideo(null)} />
                     
                     <div className="relative w-full max-w-4xl 2xl:max-w-5xl bg-black rounded-[2rem] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.5)] border border-white/20 animate-in zoom-in-95 duration-300 group">
-                        {/* Overlay Top Bar */}
-                        <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        {/* Fixed Close Button (Screen Top Right) */}
+                        <Tooltip content="Kapat">
+                            <button 
+                                onClick={() => setActiveVideo(null)} 
+                                className="fixed top-6 right-6 z-[110] w-12 h-12 rounded-full bg-black/40 hover:bg-red-600 hover:scale-110 text-white flex items-center justify-center backdrop-blur-md transition-all border border-white/20 shadow-2xl"
+                            >
+                                <X size={24} />
+                            </button>
+                        </Tooltip>
+
+                        {/* Overlay Top Bar (Video Title) */}
+                        <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                             <div className="flex-1 min-w-0 pr-4">
                                 <h3 className="text-white font-bold text-lg tracking-tight drop-shadow-md">{activeVideo.title}</h3>
                                 <p className="text-white/70 text-xs mt-0.5 drop-shadow-md">{activeVideo.type === "video" ? "Video Kaydı" : "Canlı Ders Kaydı"}</p>
                             </div>
-                            <Tooltip content="Kapat"><button 
-                                onClick={() => setActiveVideo(null)} 
-                                className="w-10 h-10 rounded-full bg-white/10 hover:bg-red-500 hover:scale-110 text-white flex items-center justify-center backdrop-blur-md transition-all shrink-0 border border-white/20"
-                            >
-                                <X size={20} />
-                            </button></Tooltip>
                         </div>
                         
                         {/* Video Area */}

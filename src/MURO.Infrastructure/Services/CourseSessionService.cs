@@ -65,6 +65,7 @@ public class CourseSessionService : ICourseSessionService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
+        await _cache.RemoveAsync($"analytics:courseattendance:{courseId}");
 
         return MapSessionDto(session);
     }
@@ -99,6 +100,7 @@ public class CourseSessionService : ICourseSessionService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
+        await _cache.RemoveAsync($"analytics:courseattendance:{courseId}");
 
         return MapSessionDto(session);
     }
@@ -139,6 +141,7 @@ public class CourseSessionService : ICourseSessionService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
+        await _cache.RemoveAsync($"analytics:courseattendance:{courseId}");
     }
 
     public async Task ReorderSessionsAsync(Guid courseId, List<Guid> sessionIds)
@@ -155,6 +158,7 @@ public class CourseSessionService : ICourseSessionService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
+        await _cache.RemoveAsync($"analytics:courseattendance:{courseId}");
     }
 
     public async Task<List<UpcomingSessionDto>> GetUpcomingSessionsAsync()
@@ -290,6 +294,7 @@ public class CourseSessionService : ICourseSessionService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
+        await _cache.RemoveAsync($"analytics:courseattendance:{courseId}");
 
         return MapSessionDto(session);
     }

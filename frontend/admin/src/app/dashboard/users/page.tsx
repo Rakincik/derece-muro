@@ -54,8 +54,9 @@ function mapApiUser(u: UserDto): User {
     return { ...u, phone: formatPhoneForDisplay(u.phone), groupNames: u.groupNames || [], tcNo: (u as any).tcNo || "" };
 }
 
-function FilterDropdown({ value, onChange, options, icon: Icon, widthClass = "w-full lg:w-44" }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; icon?: any; widthClass?: string }) {
+function FilterDropdown({ value, onChange, options, icon: Icon, widthClass = "w-full lg:w-44", searchable = false }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; icon?: any; widthClass?: string; searchable?: boolean }) {
     const [open, setOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -63,23 +64,47 @@ function FilterDropdown({ value, onChange, options, icon: Icon, widthClass = "w-
         return () => document.removeEventListener("mousedown", handler);
     }, []);
     const sel = options.find(o => o.value === value) || options[0];
+    const filteredOptions = searchable && searchQuery.trim() 
+        ? options.filter(o => o.label.toLowerCase().includes(searchQuery.toLowerCase()))
+        : options;
+
     return (
-        <div ref={ref} className={`relative ${widthClass}`}>
+        <div ref={ref} className={`relative shrink-0 ${widthClass}`}>
             <button type="button" onClick={() => setOpen(!open)} className={`w-full flex items-center justify-between px-4 py-2.5 text-sm bg-white border rounded-xl transition-all shadow-sm ${open ? 'border-[#A0AEC0] ring-2 ring-[#0A1931]/10' : 'border-[#E2E8F0]'}`}>
-                <div className="flex items-center gap-2.5">
-                    {Icon && <Icon size={14} className="text-[#A0AEC0]" />}
-                    <span className="text-[#0A1931] font-semibold">{sel.label}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                    {Icon && <Icon size={14} className="text-[#A0AEC0] shrink-0" />}
+                    <span className="text-[#0A1931] font-semibold truncate" title={sel.label}>{sel.label}</span>
                 </div>
-                <ChevronDown size={16} className={`text-[#A0AEC0] transition-transform ${open ? 'rotate-180' : ''}`} />
+                <ChevronDown size={16} className={`text-[#A0AEC0] transition-transform shrink-0 ml-2 ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
-                <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white rounded-xl border border-[#E2E8F0] shadow-xl shadow-black/10 py-1.5 overflow-hidden animate-fade-in-up">
-                    {options.map(o => (
-                        <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); }} className="w-full flex items-center justify-between px-4 py-2 text-left hover:bg-[#F8FAFC] transition-colors">
-                            <span className={`text-xs ${value === o.value ? 'font-bold text-[#0A1931]' : 'text-[#475569] font-medium'}`}>{o.label}</span>
-                            {value === o.value && <Check size={14} className="text-blue-600" />}
-                        </button>
-                    ))}
+                <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white rounded-xl border border-[#E2E8F0] shadow-xl shadow-black/10 py-1.5 flex flex-col animate-fade-in-up">
+                    {searchable && (
+                        <div className="px-2 pb-1.5 mb-1.5 border-b border-[#E2E8F0]">
+                            <div className="relative">
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Ara..." 
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0A1931]/20"
+                                    onClick={e => e.stopPropagation()}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                        {filteredOptions.length > 0 ? filteredOptions.map(o => (
+                            <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); setSearchQuery(""); }} className="w-full flex items-center justify-between px-4 py-2 text-left hover:bg-[#F8FAFC] transition-colors">
+                                <span className={`text-xs truncate ${value === o.value ? 'font-bold text-[#0A1931]' : 'text-[#475569] font-medium'}`} title={o.label}>{o.label}</span>
+                                {value === o.value && <Check size={14} className="text-blue-600 shrink-0 ml-2" />}
+                            </button>
+                        )) : (
+                            <div className="px-4 py-3 text-xs text-center text-[#A0AEC0]">Bulunamadı</div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -381,11 +406,13 @@ export default function UsersPage() {
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
                     <input type="text" placeholder="İsim, kullanıcı adı veya telefon ile ara..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="w-full pl-9 pr-4 py-2.5 text-sm bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0] transition-all" />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto pb-1 sm:pb-0">
                     <FilterDropdown 
                         value={groupFilter} 
                         onChange={v => { setGroupFilter(v); setPage(1); }}
                         icon={Users}
+                        searchable={true}
+                        widthClass="w-full lg:w-64"
                         options={[
                             { value: "all", label: "Tüm Gruplar" },
                             ...groupOptions.map(g => ({ value: g, label: g }))
@@ -859,12 +886,10 @@ export default function UsersPage() {
                                     {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                                 </button>
                             </div>
-                            {(f.role !== "Student" && f.role !== "Öğrenci") && (
-                                <p className="text-[10px] text-[#A0AEC0] mt-1 flex items-center gap-1">
-                                    <AlertTriangle size={12} className="text-amber-500" />
-                                    Şifreniz en az 6 haneli olmalıdır ve Türkçe karakter (ç, ğ, ı, ö, ş, ü) içermemelidir.
-                                </p>
-                            )}
+                            <p className="text-[10px] text-[#A0AEC0] mt-1 flex items-center gap-1">
+                                <AlertTriangle size={12} className="text-amber-500" />
+                                Şifreniz en az 6 haneli olmalıdır.
+                            </p>
                             {!user && (f.role === "Student" || f.role === "Öğrenci") && !manualPw && (
                                 <div className="text-xs bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-800 font-semibold flex items-center justify-between">
                                     <span>Varsayılan Öğrenci Şifresi:</span>

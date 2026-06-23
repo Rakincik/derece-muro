@@ -12,7 +12,10 @@ export default function CoursesPage() {
     const [courses, setCourses] = useState<CourseDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "in_progress" | "not_started">("all");
+    const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+    const pageSize = 12;
 
     useEffect(() => {
         if (!token || !tenantId) return;
@@ -22,9 +25,25 @@ export default function CoursesPage() {
             .finally(() => setLoading(false));
     }, [token, tenantId]);
 
-    const filtered = courses.filter(c =>
-        c.title.toLowerCase().includes(search.toLowerCase())
-    );
+    // Arama veya filtre değiştiğinde ilk sayfaya dön
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, statusFilter]);
+
+    const filtered = courses.filter(c => {
+        const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
+        let matchStatus = true;
+        const comp = c.completionPercentage ?? 0;
+        
+        if (statusFilter === "completed") matchStatus = comp >= 100;
+        else if (statusFilter === "in_progress") matchStatus = comp > 0 && comp < 100;
+        else if (statusFilter === "not_started") matchStatus = comp === 0;
+        
+        return matchSearch && matchStatus;
+    });
+
+    const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+    const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
         <div className="w-full max-w-[1600px] mx-auto px-4 lg:px-8">
@@ -42,6 +61,16 @@ export default function CoursesPage() {
                         onChange={e => setSearch(e.target.value)}
                         className="px-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-[#0A1931] text-sm placeholder-[#A0AEC0] focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] w-full sm:w-56 transition-all shadow-sm"
                     />
+                    <select
+                        value={statusFilter}
+                        onChange={e => setStatusFilter(e.target.value as any)}
+                        className="px-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-[#0A1931] text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] shadow-sm cursor-pointer"
+                    >
+                        <option value="all">Tüm Dersler</option>
+                        <option value="not_started">Başlamadıklarım</option>
+                        <option value="in_progress">Devam Edenler</option>
+                        <option value="completed">Tamamlananlar</option>
+                    </select>
                     <div className="flex bg-[#E2E8F0]/30 p-1 rounded-xl">
                         <button
                             onClick={() => setViewMode("list")}
@@ -78,7 +107,7 @@ export default function CoursesPage() {
             ) : (
                 viewMode === "grid" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {filtered.map((course) => (
+                        {paginated.map((course) => (
                             <Link
                                 key={course.id}
                                 href={`/dashboard/courses/${course.id}`}
@@ -137,7 +166,7 @@ export default function CoursesPage() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {filtered.map(course => (
+                        {paginated.map(course => (
                             <Link
                                 key={course.id}
                                 href={`/dashboard/courses/${course.id}`}
@@ -179,6 +208,35 @@ export default function CoursesPage() {
                         ))}
                     </div>
                 )
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-2">
+                    <button
+                        onClick={() => {
+                            setCurrentPage(prev => Math.max(1, prev - 1));
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-sm font-semibold text-[#0A1931] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E2E8F0]/30 transition-colors shadow-sm"
+                    >
+                        Önceki
+                    </button>
+                    <span className="text-sm font-medium text-[#A0AEC0] px-4">
+                        Sayfa <strong className="text-[#0A1931]">{currentPage}</strong> / {totalPages}
+                    </span>
+                    <button
+                        onClick={() => {
+                            setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-sm font-semibold text-[#0A1931] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E2E8F0]/30 transition-colors shadow-sm"
+                    >
+                        Sonraki
+                    </button>
+                </div>
             )}
         </div>
     );

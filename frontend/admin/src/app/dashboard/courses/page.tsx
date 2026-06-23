@@ -774,16 +774,16 @@ export default function CoursesPage() {
 
             {/* Toolbar: Search + Filters + Sort + View Toggle */}
             <div className="bg-white rounded-2xl border border-[#E2E8F0]/60 p-4 shadow-sm">
-                <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1 snap-x snap-mandatory">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 pb-1">
                     {/* Search */}
-                    <div className="w-[160px] sm:flex-1 shrink-0 snap-start relative">
+                    <div className="w-full sm:flex-1 shrink-0 relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
                         <input type="text" placeholder="Ders ara..." value={search}
                             onChange={e => { setSearch(e.target.value); setCoursePage(0); }}
                             className="w-full pl-9 pr-3 py-2.5 text-xs font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0] transition-all" />
                     </div>
                     {/* Status Filter */}
-                    <div className="shrink-0 snap-start">
+                    <div className="shrink-0 w-full sm:w-auto">
                         <CustomSelect 
                             value={statusFilter}
                             onChange={(val) => { setStatusFilter(val as string); setCoursePage(0); }}
@@ -795,7 +795,7 @@ export default function CoursesPage() {
                         />
                     </div>
                     {/* Sort */}
-                    <div className="shrink-0 snap-start">
+                    <div className="shrink-0 w-full sm:w-auto">
                         <CustomSelect 
                             value={sortBy}
                             onChange={(val) => setSortBy(val as any)}
@@ -808,7 +808,7 @@ export default function CoursesPage() {
                         />
                     </div>
                     {/* View Toggle */}
-                    <div className="shrink-0 snap-start flex rounded-xl border border-[#E2E8F0] overflow-hidden">
+                    <div className="shrink-0 flex rounded-xl border border-[#E2E8F0] overflow-hidden ml-auto sm:ml-0">
                         <button onClick={() => setViewMode("grid")}
                             className={`p-2.5 transition-all ${viewMode === "grid" ? "bg-[#0A1931] text-white" : "bg-white text-[#A0AEC0] hover:bg-[#E2E8F0]/30"}`}>
                             <LayoutGrid size={14} />

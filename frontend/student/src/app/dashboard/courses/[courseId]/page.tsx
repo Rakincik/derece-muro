@@ -457,7 +457,7 @@ export default function CourseDetailPage() {
                                     })()}
 
                                     {/* ── Floating Controls Overlay ── */}
-                                    <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                                    <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
                                         {/* Sidebar toggle */}
                                         <button onClick={() => setSidebarOpen(prev => !prev)}
                                             className="flex items-center gap-1.5 px-3 py-2 bg-white/95 hover:bg-white shadow-lg rounded-lg border border-[#E2E8F0] text-[#0A1931] text-xs font-semibold transition-all hover:shadow-xl"

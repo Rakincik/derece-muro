@@ -145,7 +145,7 @@ export function BulkRegisterModal({ token, tenantId, preselectedGroupId, presele
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-5xl h-[80vh] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+            <div className="relative w-full max-w-5xl h-[90vh] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0] bg-white z-10 shrink-0">
                     <div>

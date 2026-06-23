@@ -22,7 +22,7 @@ export default function StudentDashboardPage() {
     const { data: summary, isLoading, error } = useSWR(
         token && tenantId ? `dashboard-summary:${tenantId}` : null,
         () => analyticsApi.dashboardSummary(token!, tenantId!),
-        { refreshInterval: 60000 } // Refresh everything every minute
+        { refreshInterval: 300000 } // Refresh everything every 5 minutes
     );
 
     const stats = summary?.stats;

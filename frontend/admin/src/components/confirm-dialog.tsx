@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 
 interface ConfirmDialogProps {
@@ -7,7 +9,7 @@ interface ConfirmDialogProps {
     onClose: () => void;
     onConfirm: () => void;
     title?: string;
-    message?: string;
+    message?: React.ReactNode;
     confirmText?: string;
     cancelText?: string;
     variant?: "danger" | "warning" | "info";
@@ -27,10 +29,14 @@ export function ConfirmDialog({
     cancelText = "İptal",
     variant = "danger",
 }: ConfirmDialogProps) {
-    if (!open) return null;
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    if (!open || !mounted) return null;
     const v = variantStyles[variant];
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+
+    return createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl animate-fade-in p-6 text-center"
                 onClick={e => e.stopPropagation()}>
@@ -51,6 +57,7 @@ export function ConfirmDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

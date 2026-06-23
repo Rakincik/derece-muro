@@ -239,23 +239,25 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Upcoming Events (from Calendar API) */}
-                <div className="xl:col-span-2 bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                    <div className="flex items-center justify-between mb-5">
+                <div className="xl:col-span-2 bg-white rounded-2xl border border-[#E2E8F0] p-6 flex flex-col">
+                    <div className="flex items-center justify-between mb-5 shrink-0">
                         <h2 className="text-base font-semibold text-[#0A1931]">Yaklaşan Etkinlikler</h2>
                         <Link href="/dashboard/calendar" className="text-xs text-[#0A1931] hover:text-[#1B3B6F] font-bold uppercase tracking-widest flex items-center gap-1">
                             Tümü <ArrowUpRight size={12} />
                         </Link>
                     </div>
                     {upcomingEvents.length === 0 ? (
-                        <EmptyState 
-                            icon={Calendar} 
-                            title="Planlanmış Etkinlik Yok" 
-                            message="Gelecek günlerde planlanmış herhangi bir sanal sınıf veya sınav bulunmuyor." 
-                            actionLabel="Takvime Git" 
-                            onAction={() => router.push("/dashboard/calendar")} 
-                        />
+                        <div className="flex-1 py-2">
+                            <EmptyState 
+                                icon={Calendar} 
+                                title="Planlanmış Etkinlik Yok" 
+                                message="Gelecek günlerde planlanmış herhangi bir sanal sınıf veya sınav bulunmuyor." 
+                                actionLabel="Takvime Git" 
+                                onAction={() => router.push("/dashboard/calendar")} 
+                            />
+                        </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="flex-1 space-y-3">
                             {upcomingEvents.map((e) => (
                                 <div key={e.id}
                                     className="flex items-center gap-3 p-3 rounded-xl bg-[#E2E8F0]/20 hover:bg-[#E2E8F0]/40 transition-colors">
@@ -281,13 +283,13 @@ export default function DashboardPage() {
             {/* ── Bottom Grid: Top Courses + Top Students ── */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Top Courses */}
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                    <div className="flex items-center justify-between mb-5">
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 flex flex-col">
+                    <div className="flex items-center justify-between mb-5 shrink-0">
                         <h2 className="text-base font-semibold text-[#0A1931]">En Popüler Dersler</h2>
                         <Award size={18} className="text-[#A0AEC0]" />
                     </div>
                     {topCourses.length === 0 ? (
-                        <div className="py-2">
+                        <div className="flex-1 py-2">
                             <EmptyState 
                                 icon={Award} 
                                 title="Kurs Verisi Yok" 
@@ -297,7 +299,7 @@ export default function DashboardPage() {
                             />
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="flex-1 space-y-3">
                             {topCourses.map((c, i) => (
                                 <div key={c.courseId}
                                     className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#E2E8F0]/20 transition-colors">
@@ -328,8 +330,8 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Top Students / Pending Tickets */}
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                    <div className="flex items-center justify-between mb-5">
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 flex flex-col">
+                    <div className="flex items-center justify-between mb-5 shrink-0">
                         <h2 className="text-base font-semibold text-[#0A1931]">
                             {topStudents.length > 0 ? "En Başarılı Öğrenciler" : "Bekleyen Destek Talepleri"}
                         </h2>
@@ -342,7 +344,7 @@ export default function DashboardPage() {
                         )}
                     </div>
                     {topStudents.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="flex-1 space-y-3">
                             {topStudents.map((s, i) => (
                                 <div key={s.userId}
                                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#E2E8F0]/20 transition-colors">
@@ -357,7 +359,7 @@ export default function DashboardPage() {
                             ))}
                         </div>
                     ) : pendingTickets.length === 0 ? (
-                        <div className="py-2">
+                        <div className="flex-1 py-2">
                             <EmptyState 
                                 icon={MessageSquare} 
                                 title="Harika Haber!" 
@@ -367,7 +369,7 @@ export default function DashboardPage() {
                             />
                         </div>
                     ) : (
-                        <div className="space-y-1">
+                        <div className="flex-1 space-y-1">
                             {pendingTickets.map((t) => (
                                 <Link key={t.id} href="/dashboard/support"
                                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#E2E8F0]/20 transition-colors">
