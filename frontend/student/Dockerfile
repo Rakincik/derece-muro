@@ -9,13 +9,22 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm install
+
+# Diagnostics: Check if next is installed before COPY
+RUN echo "=== DIAGNOSTIC: BEFORE COPY ===" && \
+    ls -la node_modules/next/dist/bin/next || echo "next binary NOT found before COPY"
+
 COPY . .
+
+# Diagnostics: Check if next is installed after COPY
+RUN echo "=== DIAGNOSTIC: AFTER COPY ===" && \
+    ls -la node_modules/next/dist/bin/next || echo "next binary NOT found after COPY"
 
 # Build-time environment variables
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-RUN node node_modules/next/dist/bin/next build
+RUN npm run build
 
 # --- Stage 2: Runner ---
 FROM node:20-alpine AS runner
