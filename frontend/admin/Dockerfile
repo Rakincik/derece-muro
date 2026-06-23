@@ -4,21 +4,13 @@
 # ============================================
 
 # --- Stage 1: Build ---
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
-
-# Diagnostics: Check if next is installed before COPY
-RUN echo "=== DIAGNOSTIC: BEFORE COPY ===" && \
-    ls -la node_modules/next/dist/bin/next || echo "next binary NOT found before COPY"
+RUN npm ci
 
 COPY . .
-
-# Diagnostics: Check if next is installed after COPY
-RUN echo "=== DIAGNOSTIC: AFTER COPY ===" && \
-    ls -la node_modules/next/dist/bin/next || echo "next binary NOT found after COPY"
 
 # Build-time environment variables
 ARG NEXT_PUBLIC_API_URL
@@ -27,15 +19,18 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm run build
 
 # --- Stage 2: Runner ---
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 -g nodejs nextjs
 
 # Copy standalone output
 COPY --from=builder /app/.next/standalone ./
@@ -50,3 +45,4 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD wget -q --spider http://localhost:3001 || exit 1
 
 CMD ["node", "server.js"]
+
