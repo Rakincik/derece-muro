@@ -245,19 +245,39 @@ public class CourseService : ICourseService
             .FirstOrDefaultAsync(c => c.Id == courseId )
             ?? throw new KeyNotFoundException("Ders bulunamadı.");
 
-        // True Hard Delete: Explicitly delete all child records first to satisfy Foreign Key constraints
+        // True Hard Delete: Explicitly delete or nullify all child records first to satisfy Foreign Key constraints
         await _context.CourseStudents.Where(cs => cs.CourseId == courseId).ExecuteDeleteAsync();
         await _context.CourseGroups.Where(cg => cg.CourseId == courseId).ExecuteDeleteAsync();
         await _context.CourseMedias.Where(cm => cm.CourseId == courseId).ExecuteDeleteAsync();
         await _context.CourseMaterials.Where(cm => cm.CourseId == courseId).ExecuteDeleteAsync();
         
+        // Assignments & submissions
+        var assignmentIds = await _context.Assignments.IgnoreQueryFilters().Where(a => a.CourseId == courseId).Select(a => a.Id).ToListAsync();
+        if (assignmentIds.Any())
+        {
+            await _context.AssignmentSubmissions.Where(s => assignmentIds.Contains(s.AssignmentId)).ExecuteDeleteAsync();
+            await _context.Assignments.IgnoreQueryFilters().Where(a => assignmentIds.Contains(a.Id)).ExecuteDeleteAsync();
+        }
+
+        // CalendarEvents
+        await _context.CalendarEvents.IgnoreQueryFilters().Where(ce => ce.CourseId == courseId).ExecuteDeleteAsync();
+
+        // ExamAssignments
+        await _context.ExamAssignments.Where(ea => ea.TargetType == "Course" && ea.TargetId == courseId).ExecuteDeleteAsync();
+
+        // Nullify generic course references
+        await _context.MediaAssets.IgnoreQueryFilters().Where(ma => ma.CourseId == courseId).ExecuteUpdateAsync(s => s.SetProperty(m => m.CourseId, (Guid?)null));
+        await _context.Podcasts.IgnoreQueryFilters().Where(p => p.CourseId == courseId).ExecuteUpdateAsync(s => s.SetProperty(p => p.CourseId, (Guid?)null));
+        await _context.Questions.IgnoreQueryFilters().Where(q => q.CourseId == courseId).ExecuteUpdateAsync(s => s.SetProperty(q => q.CourseId, (Guid?)null));
+
         // Sessions might have attendances or recordings, so we delete them specifically if needed.
-        // Wait, Session has attendances that cascade if the DB is set up, but let's be safe:
-        var sessionIds = await _context.Sessions.Where(s => s.CourseId == courseId).Select(s => s.Id).ToListAsync();
+        // Sessions can be soft-deleted, so we ignore query filters to ensure hard deletion.
+        var sessionIds = await _context.Sessions.IgnoreQueryFilters().Where(s => s.CourseId == courseId).Select(s => s.Id).ToListAsync();
         if (sessionIds.Any())
         {
-            await _context.Set<SessionAttendance>().Where(sa => sessionIds.Contains(sa.SessionId)).ExecuteDeleteAsync();
-            await _context.Sessions.Where(s => sessionIds.Contains(s.Id)).ExecuteDeleteAsync();
+            await _context.SessionRecordings.Where(sr => sessionIds.Contains(sr.SessionId)).ExecuteDeleteAsync();
+            await _context.SessionAttendances.Where(sa => sessionIds.Contains(sa.SessionId)).ExecuteDeleteAsync();
+            await _context.Sessions.IgnoreQueryFilters().Where(s => sessionIds.Contains(s.Id)).ExecuteDeleteAsync();
         }
 
         _context.Courses.Remove(course);

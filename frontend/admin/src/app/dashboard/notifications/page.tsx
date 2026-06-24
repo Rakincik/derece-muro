@@ -263,7 +263,7 @@ export default function NotificationsPage() {
                 notificationApi.adminSent(token, tenantId).catch(() => [] as AdminSentNotificationDto[]),
                 notificationApi.groups(token, tenantId).catch(() => [] as GroupSummaryDto[]),
                 notificationApi.allUsers(token, tenantId).catch(() => [] as UserDto[]),
-                courseApi.list(token, tenantId, { pageSize: 200 }).catch(() => ({ items: [] })),
+                courseApi.list(token, tenantId, { pageSize: 1000 }).catch(() => ({ items: [] })),
             ]);
             setNotifs(n);
             setGroups(g);

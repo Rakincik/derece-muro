@@ -455,8 +455,8 @@ export default function AssignmentsPage() {
         if (!token || !tenantId) return;
         setLoading(true);
         Promise.all([
-            assignmentApi.list(token, tenantId, { pageSize: 100 }).catch(() => ({ items: [], totalCount: 0 })),
-            courseApi.list(token, tenantId, { pageSize: 200 }).catch(() => ({ items: [], totalCount: 0 })),
+            assignmentApi.list(token, tenantId, { pageSize: 1000 }).catch(() => ({ items: [], totalCount: 0 })),
+            courseApi.list(token, tenantId, { pageSize: 1000 }).catch(() => ({ items: [], totalCount: 0 })),
         ]).then(([aRes, cRes]) => {
             const aList = Array.isArray(aRes) ? aRes : (aRes?.items || []);
             const cList = Array.isArray(cRes) ? cRes : (cRes?.items || []);

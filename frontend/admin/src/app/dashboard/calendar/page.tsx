@@ -151,8 +151,8 @@ export default function CalendarPage() {
 
     useEffect(() => {
         if (!token || !tenantId) return;
-        courseApi.list(token, tenantId, { pageSize: 100 }).then(res => setCourses(res.items ?? [])).catch(() => { });
-        groupsApi.list(token, tenantId, { pageSize: 100 }).then(res => setGroups(res.items ?? [])).catch(() => { });
+        courseApi.list(token, tenantId, { pageSize: 1000 }).then(res => setCourses(res.items ?? [])).catch(() => { });
+        groupsApi.list(token, tenantId, { pageSize: 1000 }).then(res => setGroups(res.items ?? [])).catch(() => { });
     }, [token, tenantId]);
 
     const today = toDateStr(new Date());

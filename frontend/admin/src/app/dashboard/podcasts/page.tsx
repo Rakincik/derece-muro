@@ -168,7 +168,7 @@ function GenerateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 
     useEffect(() => {
         if (!token || !currentTenantId) return;
-        courseApi.list(token, currentTenantId, { pageSize: 100 })
+        courseApi.list(token, currentTenantId, { pageSize: 1000 })
             .then(r => setCourses(r.items))
             .catch(() => {});
     }, [token, currentTenantId]);

@@ -221,17 +221,17 @@ export default function ExamFormModal({ onClose, onSave, initialData }: Props) {
     useEffect(() => {
         if (!token || !tenantId) return;
         
-        groupsApi.list(token, tenantId, { pageSize: 200 }).then(res => {
+        groupsApi.list(token, tenantId, { pageSize: 1000 }).then(res => {
             const items = (res as any).items || res;
             setGroups(Array.isArray(items) ? items.map((g: any) => ({ id: g.id, name: g.name, memberCount: g.memberCount ?? g.studentCount ?? 0 })) : []);
         }).catch(() => { });
 
-        courseApi.list(token, tenantId, { pageSize: 200 }).then(res => {
+        courseApi.list(token, tenantId, { pageSize: 1000 }).then(res => {
             const items = (res as any).items || res;
             setCourses(Array.isArray(items) ? items.map((c: any) => ({ id: c.id, name: c.title, studentCount: c.sessionCount || 0 })) : []);
         }).catch(() => { });
 
-        userApi.list(token, tenantId, { pageSize: 500 }).then(res => {
+        userApi.list(token, tenantId, { pageSize: 2000 }).then(res => {
             const items = (res as any).items || res;
             // Only list students for exam assignment
             const studentList = Array.isArray(items) ? items.filter((u: any) => u.role === "Student" || u.role === "Öğrenci") : [];

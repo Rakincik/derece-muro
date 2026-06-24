@@ -153,7 +153,7 @@ export default function CoursesPage() {
         if (!token || !tenantId) return;
         setLoading(true);
         try {
-            const r = await courseApi.list(token, tenantId, { pageSize: 100 });
+            const r = await courseApi.list(token, tenantId, { pageSize: 1000 });
             setCourses(r.items.map(c => mapCourse(c)));
         } catch { /* silent */ }
         finally { setLoading(false); }
@@ -1072,7 +1072,7 @@ function SettingsTab({ course, onSave, onDelete }: { course: MappedCourse; onSav
 
     useEffect(() => {
         if (!token || !tenantId) return;
-        userApi.list(token, tenantId, { pageSize: 100, role: "Instructor" })
+        userApi.list(token, tenantId, { pageSize: 1000, role: "Instructor" })
             .then(res => setInstructors(res.items))
             .catch(() => {});
     }, [token, tenantId]);
@@ -1317,7 +1317,7 @@ function CourseWizard({ onClose, onSave, isSaving }: {
 
     useEffect(() => {
         if (!token || !tenantId) return;
-        userApi.list(token, tenantId, { pageSize: 100, role: "Instructor" })
+        userApi.list(token, tenantId, { pageSize: 1000, role: "Instructor" })
             .then(res => setInstructors(res.items))
             .catch(() => {});
     }, [token, tenantId]);

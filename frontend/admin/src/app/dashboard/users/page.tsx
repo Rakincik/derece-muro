@@ -152,7 +152,7 @@ export default function UsersPage() {
         if (!token || !tenantId) return;
         try {
             setLoading(true);
-            const result = await userApi.list(token, tenantId, { pageSize: 200 });
+            const result = await userApi.list(token, tenantId, { pageSize: 10000 });
             setUsers(result.items.map(mapApiUser));
         } catch (e) { console.error('Failed to fetch users:', e); }
         finally { setLoading(false); }
@@ -161,7 +161,7 @@ export default function UsersPage() {
     useEffect(() => { fetchUsers(); }, [token, tenantId]);
     useEffect(() => {
         if (!token || !tenantId) return;
-        groupsApi.list(token, tenantId, { pageSize: 200 })
+        groupsApi.list(token, tenantId, { pageSize: 1000 })
             .then(res => setGroupOptions(res.items.map((g: any) => g.name)))
             .catch(() => {});
     }, [token, tenantId]);

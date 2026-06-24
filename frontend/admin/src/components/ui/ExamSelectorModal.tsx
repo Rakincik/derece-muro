@@ -25,7 +25,7 @@ export function ExamSelectorModal({ onClose, onSelect }: ExamSelectorModalProps)
             setLoading(true);
             try {
                 // Fetch all published/ready exams
-                const res = await examApi.list(token, currentTenantId, { pageSize: 100, status: "Yayında" });
+                const res = await examApi.list(token, currentTenantId, { pageSize: 1000, status: "Yayında" });
                 setExams(res.items || []);
             } catch (err) {
                 console.error(err);

@@ -27,7 +27,7 @@ export function CourseSelectorModal({ onClose, onSelect, initialSelectedCourseId
         if (!token || !tenantId) return;
         setLoading(true);
         try {
-            const res = await courseApi.list(token, tenantId, { pageSize: 100 });
+            const res = await courseApi.list(token, tenantId, { pageSize: 1000 });
             setCourses(res.items || []);
         } catch (error) {
             console.error("Dersler yüklenemedi", error);

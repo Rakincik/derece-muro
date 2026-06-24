@@ -27,13 +27,13 @@ export const notificationApi = {
 
     /** List groups for targeting */
     groups: async (token: string, tenantId: string): Promise<GroupSummaryDto[]> => {
-        const res = await api<any>(`/groups?pageSize=200`, { token, tenantId });
+        const res = await api<any>(`/groups?pageSize=1000`, { token, tenantId });
         return Array.isArray(res) ? res : res?.items ?? [];
     },
 
     /** All users for targeting */
     allUsers: async (token: string, tenantId: string): Promise<UserDto[]> => {
-        const res = await api<PagedUsersResult | UserDto[]>(`/users?pageSize=200`, { token, tenantId });
+        const res = await api<PagedUsersResult | UserDto[]>(`/users?pageSize=10000`, { token, tenantId });
         return Array.isArray(res) ? res : (res as any).items ?? [];
     },
 

@@ -195,7 +195,7 @@ export default function GroupsPage() {
     useEffect(() => {
         if (!assignCourseOpen || !token || !tenantId || allCourses.length > 0) return;
         setLoadingCourses(true);
-        courseApi.list(token, tenantId, { pageSize: 100 }).then(res => {
+        courseApi.list(token, tenantId, { pageSize: 1000 }).then(res => {
             console.log("FETCHED COURSES RES:", res);
             setAllCourses((res?.items || []).map(c => ({ id: c.id, title: c.title })));
         }).catch((err) => { 

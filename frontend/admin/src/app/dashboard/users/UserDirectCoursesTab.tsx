@@ -33,7 +33,7 @@ export function UserDirectCoursesTab({ userId, userRole }: { userId: string; use
         setLoading(true);
         try {
             if (isInstructor) {
-                const data = await courseApi.list(token, tenantId, { instructorId: userId, pageSize: 100 });
+                const data = await courseApi.list(token, tenantId, { instructorId: userId, pageSize: 1000 });
                 setCourses(data.items);
             } else {
                 const data = await userApi.getDirectCourses(token, tenantId, userId);
