@@ -52,7 +52,7 @@ function formatPhoneForDisplay(phone?: string): string {
 }
 
 function mapApiUser(u: UserDto): User {
-    return { ...u, phone: formatPhoneForDisplay(u.phone), groupNames: u.groupNames || [], tcNo: (u as any).tcNo || "" };
+    return { ...u, phone: formatPhoneForDisplay(u.phone ?? undefined), groupNames: u.groupNames || [], tcNo: (u as any).tcNo || "" };
 }
 
 function FilterDropdown({ value, onChange, options, icon: Icon, widthClass = "w-full lg:w-44", searchable = false }: { value: string; onChange: (v: string) => void; options: { value: string; label: string; icon?: any }[]; icon?: any; widthClass?: string; searchable?: boolean }) {
@@ -269,11 +269,19 @@ export default function UsersPage() {
                 setEditUser(null);
                 setShowAddModal(false);
             } else {
+                let targetPassword = d.password;
+                if (!targetPassword && (d.role === "Student" || d.role === "Öğrenci")) {
+                    const lastTwo = d.phone && d.phone.length >= 2 ? d.phone.substring(d.phone.length - 2) : "00";
+                    targetPassword = d.tcNo ? `${d.tcNo}.${lastTwo}` : "123456";
+                } else if (!targetPassword) {
+                    targetPassword = "123456";
+                }
+
                 const created = await userApi.create(token, tenantId, { 
                     firstName: d.firstName || "", 
                     lastName: d.lastName || "", 
                     email: d.email || "", 
-                    password: d.password || "123456", 
+                    password: targetPassword, 
                     role: d.role || "Student", 
                     studentType: apiStudentType || undefined, 
                     phone: d.phone,
@@ -388,6 +396,7 @@ export default function UsersPage() {
                         onChange={e => setManualPw(e.target.value)}
                         placeholder="Yeni şifre..."
                         autoFocus
+                        autoComplete="new-password"
                         className="w-full pl-11 pr-11 py-3.5 text-sm font-bold bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0] transition-all shadow-inner"
                     />
                     <button type="button" onClick={() => setShowQuickPw(!showQuickPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A0AEC0] hover:text-[#0A1931] transition-colors">
@@ -942,6 +951,7 @@ export default function UsersPage() {
                             <div className="relative">
                                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
                                 <input type={showPw ? "text" : "password"} value={manualPw} onChange={e => setManualPw(e.target.value)}
+                                    autoComplete="new-password"
                                     className="w-full pl-9 pr-11 py-2.5 text-sm bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A1931]/10 focus:border-[#A0AEC0]"
                                     placeholder="Manuel şifre belirlemek için girin..." />
                                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A0AEC0] hover:text-[#0A1931] transition-colors">

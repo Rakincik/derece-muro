@@ -330,6 +330,10 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = contentTypeProvider,
     OnPrepareResponse = ctx =>
     {
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
         if (ctx.File.Name.EndsWith(".ts", StringComparison.OrdinalIgnoreCase))
         {
             // Video parçaları kalıcıdır, 1 yıl tarayıcıda önbellekle
@@ -353,6 +357,10 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/api/v1/uploads",
     OnPrepareResponse = ctx =>
     {
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
         if (ctx.File.Name.EndsWith(".ts", StringComparison.OrdinalIgnoreCase))
         {
             ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");

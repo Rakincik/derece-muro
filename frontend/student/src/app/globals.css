@@ -717,3 +717,9 @@ body {
     padding: 16px;
   }
 }
+
+/* Prevent Chrome Auto-Darkening/Force-Dark on BigBlueButton and Video playbacks inside iframes */
+iframe {
+  color-scheme: only light !important;
+  background-color: white !important;
+}

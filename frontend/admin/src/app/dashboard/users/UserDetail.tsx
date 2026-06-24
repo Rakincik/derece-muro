@@ -12,6 +12,7 @@ export interface User {
     createdAt: string; lastLoginAt: string | null; groupNames: string[];
     password?: string;
     tcNo?: string;
+    username?: string;
 }
 
 const rc: Record<string, { bg: string; text: string; avatar: string; hero: string }> = {
@@ -33,10 +34,10 @@ const roleLabel: Record<string, string> = { Student: "Öğrenci", Instructor: "E
 interface UserDetailProps {
     user: User;
     onBack: () => void;
-    onToggleActive: (id: string) => void;
-    onChangeRole: (id: string, role: string) => void;
-    onDelete: (id: string) => void;
-    onQuickReset: (user: User) => void;
+    onToggleActive?: (id: string) => void;
+    onChangeRole?: (id: string, role: string) => void;
+    onDelete?: (id: string) => void;
+    onQuickReset?: (user: User) => void;
     onEdit?: (user: User) => void;
     canEdit?: boolean;
 }
@@ -60,7 +61,7 @@ export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDe
 
     const confirmRole = async () => {
         if (confirmRoleChange) {
-            await onChangeRole(u.id, confirmRoleChange);
+            await onChangeRole?.(u.id, confirmRoleChange);
             setConfirmRoleChange(null);
         }
     };
@@ -155,10 +156,10 @@ export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDe
                             )}
                             <RoleSelect value={u.role} onChange={handleRoleChangeRequest} />
                             <div className="h-8 w-px bg-[#E2E8F0] mx-1 hidden md:block"></div>
-                            <button onClick={() => onQuickReset(u)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[#1B3B6F] text-xs font-bold whitespace-nowrap hover:bg-[#F0F4F8] transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm">
+                            <button onClick={() => onQuickReset?.(u)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[#1B3B6F] text-xs font-bold whitespace-nowrap hover:bg-[#F0F4F8] transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm">
                                 <KeyRound size={14} /> Şifre Sıfırla
                             </button>
-                            <button onClick={() => onToggleActive(u.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm ${u.isActive ? "text-orange-600 hover:bg-orange-50" : "text-emerald-600 hover:bg-emerald-50"}`}>
+                            <button onClick={() => onToggleActive?.(u.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm ${u.isActive ? "text-orange-600 hover:bg-orange-50" : "text-emerald-600 hover:bg-emerald-50"}`}>
                                 {u.isActive ? <><ToggleRight size={14} /> Pasife Al</> : <><ToggleLeft size={14} /> Aktif Et</>}
                             </button>
                             <button onClick={() => setDeleteTarget(u.id)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-red-600 text-xs font-bold whitespace-nowrap hover:bg-red-50 transition-all active:scale-[0.97] bg-white border border-[#E2E8F0]/80 shadow-sm">
@@ -182,7 +183,7 @@ export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDe
                         { icon: ShieldCheck, label: "Kullanıcı Adı", value: u.username || "—", bg: "bg-blue-50 text-blue-600" },
                         { icon: Mail, label: "E-posta", value: u.email || "—", bg: "bg-blue-50 text-blue-600" },
                         { icon: Phone, label: "Telefon", value: u.phone || "—", bg: "bg-emerald-50 text-emerald-600" },
-                        { icon: KeyRound, label: "Şifre", value: u.password || "******** (Gizli)", bg: "bg-amber-50 text-amber-600", action: () => onQuickReset(u), actionIcon: <KeyRound size={16} />, actionTooltip: "Şifre Sıfırla" },
+                        { icon: KeyRound, label: "Şifre", value: u.password || "******** (Gizli)", bg: "bg-amber-50 text-amber-600", action: onQuickReset ? () => onQuickReset(u) : undefined, actionIcon: <KeyRound size={16} />, actionTooltip: "Şifre Sıfırla" },
                         { icon: CalendarIcon, label: "Kayıt Tarihi", value: new Date(u.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }), bg: "bg-purple-50 text-purple-600" },
                         { icon: Clock, label: "Son Giriş", value: lastLoginText, bg: "bg-[#F0F4F8] text-[#A0AEC0]", colSpan: 2 },
                     ].map((r, idx) => (
@@ -241,7 +242,7 @@ export function UserDetail({ user: u, onBack, onToggleActive, onChangeRole, onDe
                 open={deleteTarget === u.id}
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={async () => {
-                    await onDelete(u.id);
+                    await onDelete?.(u.id);
                 }}
                 title="Kullanıcıyı Sil"
                 message={`"${u.firstName} ${u.lastName}" kullanıcısını silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`}

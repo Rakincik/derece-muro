@@ -127,7 +127,7 @@ public class CreateUserRequestValidator : AbstractValidator<CreateUserRequest>
             .MaximumLength(100);
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Şifre gereklidir.")
-            .MinimumLength(6).WithMessage("Şifre en az 6 karakter olmalıdır.");
+            .NotEmpty().Unless(x => x.Role == "Student" || x.Role == "Öğrenci").WithMessage("Şifre gereklidir.")
+            .MinimumLength(6).Unless(x => (x.Role == "Student" || x.Role == "Öğrenci") && string.IsNullOrEmpty(x.Password)).WithMessage("Şifre en az 6 karakter olmalıdır.");
     }
 }
