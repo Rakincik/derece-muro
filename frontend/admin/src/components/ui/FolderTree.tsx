@@ -74,7 +74,9 @@ const FolderNode: React.FC<FolderNodeProps> = ({ folder, level, activeFolderId, 
                         )}
                     </button>
                     <Folder size={16} className={isActive ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'} />
-                    <span className="truncate text-sm select-none">{folder.name}</span>
+                    <Tooltip content={folder.name} className="min-w-0 flex-1" position="top">
+                        <span className="truncate text-sm select-none block w-full">{folder.name}</span>
+                    </Tooltip>
                 </div>
 
                 {/* Inline Actions */}
