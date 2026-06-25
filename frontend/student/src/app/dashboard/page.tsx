@@ -87,13 +87,6 @@ export default function StudentDashboardPage() {
                     <p className="text-white/40 text-sm">
                         {new Date().toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                     </p>
-                    {streak > 0 && (
-                        <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-white/10 rounded-xl w-fit backdrop-blur-sm border border-white/10">
-                            <Flame size={18} className="text-orange-400" />
-                            <span className="text-white font-bold text-sm">{streak} Gün</span>
-                            <span className="text-white/50 text-xs">kesintisiz çalışma 🔥</span>
-                        </div>
-                    )}
                 </div>
                 <div className="hidden md:flex items-center gap-6 relative z-10">
                     <div className="text-center">
@@ -232,9 +225,9 @@ export default function StudentDashboardPage() {
             {/* ── Stats Grid (Mobile) ── */}
             <div className="md:hidden animate-fade-in animate-fade-in-delay-1">
                 {loading ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="glass-card p-4"><div className="w-9 h-9 rounded-xl shimmer mb-3" /><div className="h-3 shimmer rounded w-16 mb-2" /><div className="h-6 shimmer rounded w-12" /></div>
+                    <div className="grid grid-cols-3 gap-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="glass-card p-3"><div className="w-8 h-8 rounded-xl shimmer mb-2.5" /><div className="h-2.5 shimmer rounded w-12 mb-1.5" /><div className="h-5 shimmer rounded w-10" /></div>
                         ))}
                     </div>
                 ) : (
@@ -242,10 +235,9 @@ export default function StudentDashboardPage() {
                         items={[
                             { label: "çalışma süresi", value: `${hours}s ${mins}dk`, icon: Clock, colorClass: "text-[#0A1931]", bgClass: "bg-[#1B3B6F]/10", iconColorClass: "text-[#1B3B6F]" },
                             { label: "tamamlanan video", value: stats?.completedVideos ?? 0, icon: CheckCircle2, colorClass: "text-[#0A1931]", bgClass: "bg-emerald-100", iconColorClass: "text-emerald-600" },
-                            { label: "katılım oranı", value: `%${stats?.attendanceRate ?? 0}`, icon: Target, colorClass: "text-[#0A1931]", bgClass: "bg-blue-100", iconColorClass: "text-blue-600" },
-                            { label: "aktif seri 🔥", value: `${streak} Gün`, icon: Flame, colorClass: "text-[#0A1931]", bgClass: "bg-orange-100", iconColorClass: "text-orange-500" }
+                            { label: "katılım oranı", value: `%${stats?.attendanceRate ?? 0}`, icon: Target, colorClass: "text-[#0A1931]", bgClass: "bg-blue-100", iconColorClass: "text-blue-600" }
                         ]}
-                        className="grid grid-cols-2 gap-4"
+                        className="grid grid-cols-3 gap-3"
                     />
                 )}
             </div>
