@@ -56,8 +56,8 @@ function CustomCourseSelect({ courses, value, onChange, disabled }: { courses: C
 
     const filteredCourses = useMemo(() => {
         if (!search.trim()) return courses;
-        const s = search.toLowerCase();
-        return courses.filter(c => c.title.toLowerCase().includes(s));
+        const s = search.toLocaleLowerCase('tr');
+        return courses.filter(c => c.title.toLocaleLowerCase('tr').includes(s));
     }, [courses, search]);
 
     useEffect(() => {

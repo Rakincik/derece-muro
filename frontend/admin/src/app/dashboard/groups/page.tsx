@@ -211,8 +211,8 @@ export default function GroupsPage() {
 
     const filteredTree = useMemo(() => {
         if (!treeSearch) return null;
-        const q = treeSearch.toLowerCase();
-        return groups.filter(g => g.name.toLowerCase().includes(q));
+        const q = treeSearch.toLocaleLowerCase('tr');
+        return groups.filter(g => g.name.toLocaleLowerCase('tr').includes(q));
     }, [groups, treeSearch]);
 
     const toggle = (id: string) => {
@@ -423,7 +423,7 @@ export default function GroupsPage() {
         if (!detail) return [];
         const memberIds = new Set(detail.members.map(m => m.userId));
         return allUsers.filter(u => !memberIds.has(u.id) &&
-            (addMemberSearch === "" || u.fullName.toLowerCase().includes(addMemberSearch.toLowerCase()) || u.email.toLowerCase().includes(addMemberSearch.toLowerCase()))
+            (addMemberSearch === "" || u.fullName.toLocaleLowerCase('tr').includes(addMemberSearch.toLocaleLowerCase('tr')) || u.email.toLocaleLowerCase('tr').includes(addMemberSearch.toLocaleLowerCase('tr')))
         );
     }, [allUsers, detail, addMemberSearch]);
 
@@ -431,8 +431,8 @@ export default function GroupsPage() {
         if (!detail) return [];
         let list = detail.members;
         if (memberSearch) {
-            const q = memberSearch.toLowerCase();
-            list = list.filter(m => m.userFullName.toLowerCase().includes(q) || m.email.toLowerCase().includes(q));
+            const q = memberSearch.toLocaleLowerCase('tr');
+            list = list.filter(m => m.userFullName.toLocaleLowerCase('tr').includes(q) || m.email.toLocaleLowerCase('tr').includes(q));
         }
         return list;
     }, [detail, memberSearch]);
@@ -1111,7 +1111,7 @@ export default function GroupsPage() {
                                     <>
                                         {allCourses
                                             .filter(c => !detail?.courses.some(dc => dc.courseId === c.id))
-                                            .filter(c => !assignCourseSearch || c.title.toLowerCase().includes(assignCourseSearch.toLowerCase()))
+                                            .filter(c => !assignCourseSearch || c.title.toLocaleLowerCase('tr').includes(assignCourseSearch.toLocaleLowerCase('tr')))
                                             .map(c => {
                                                 const isSelected = assignCourseSelection.has(c.id);
                                                 return (
@@ -1128,7 +1128,7 @@ export default function GroupsPage() {
                                                     </div>
                                                 );
                                         })}
-                                        {allCourses.filter(c => !detail?.courses.some(dc => dc.courseId === c.id)).filter(c => !assignCourseSearch || c.title.toLowerCase().includes(assignCourseSearch.toLowerCase())).length === 0 && (
+                                        {allCourses.filter(c => !detail?.courses.some(dc => dc.courseId === c.id)).filter(c => !assignCourseSearch || c.title.toLocaleLowerCase('tr').includes(assignCourseSearch.toLocaleLowerCase('tr'))).length === 0 && (
                                             <p className="text-center text-sm text-[#A0AEC0] py-4">Aramanıza uygun ders bulunamadı.</p>
                                         )}
                                     </>

@@ -37,7 +37,7 @@ export function CourseSelectorModal({ onClose, onSelect, initialSelectedCourseId
     };
 
     const filteredCourses = courses.filter(c => 
-        c.title.toLowerCase().includes(searchQuery.toLowerCase())
+        c.title.toLocaleLowerCase('tr').includes(searchQuery.toLocaleLowerCase('tr'))
     );
 
     const handleConfirm = () => {
