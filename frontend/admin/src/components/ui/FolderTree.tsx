@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Folder, MoreVertical, Plus, Edit2, Trash2, BookOpen, Search, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, Plus, Edit2, Trash2, BookOpen, Search, X } from 'lucide-react';
 import { mediaLibraryApi, type MediaFolderDto } from '@/lib/api';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -16,34 +16,45 @@ interface FolderNodeProps {
     onDragOverFolder: (e: React.DragEvent, folderId: string | null) => void;
     onDragLeaveFolder: (e: React.DragEvent) => void;
     onDropOnFolder: (e: React.DragEvent, folderId: string | null) => void;
+    expandedFolderIds: Set<string>;
+    onToggleExpand: (folderId: string, expand: boolean) => void;
 }
 
-const FolderNode: React.FC<FolderNodeProps> = ({ folder, level, activeFolderId, path, onSelect, onAction, dragOverFolderId, onDragOverFolder, onDragLeaveFolder, onDropOnFolder }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+const FolderNode: React.FC<FolderNodeProps> = ({ 
+    folder, level, activeFolderId, path, onSelect, onAction, 
+    dragOverFolderId, onDragOverFolder, onDragLeaveFolder, onDropOnFolder,
+    expandedFolderIds, onToggleExpand
+}) => {
     const [subFolders, setSubFolders] = useState<MediaFolderDto[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const isExpanded = expandedFolderIds.has(folder.id);
     const currentPath = [...path, { id: folder.id, name: folder.name }];
 
     const hasChildren = folder.subFolderCount > 0;
     const isActive = activeFolderId === folder.id;
 
-    const toggleExpand = async (e: React.MouseEvent) => {
+    // Reactively fetch subfolders when expanded programmatically or manually
+    useEffect(() => {
+        if (isExpanded && subFolders.length === 0 && hasChildren && !isLoading) {
+            setIsLoading(true);
+            mediaLibraryApi.getFolders(folder.id)
+                .then(fetched => {
+                    setSubFolders(fetched);
+                })
+                .catch(err => {
+                    console.error("Failed to load subfolders", err);
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        }
+    }, [isExpanded, hasChildren]);
+
+    const toggleExpand = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!hasChildren) return;
-        
-        if (!isExpanded && subFolders.length === 0) {
-            setIsLoading(true);
-            try {
-                const fetched = await mediaLibraryApi.getFolders(folder.id);
-                setSubFolders(fetched);
-            } catch (err) {
-                console.error("Failed to load subfolders", err);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        setIsExpanded(!isExpanded);
+        onToggleExpand(folder.id, !isExpanded);
     };
 
     const handleSelect = () => {
@@ -131,6 +142,8 @@ const FolderNode: React.FC<FolderNodeProps> = ({ folder, level, activeFolderId, 
                             onDragOverFolder={onDragOverFolder}
                             onDragLeaveFolder={onDragLeaveFolder}
                             onDropOnFolder={onDropOnFolder}
+                            expandedFolderIds={expandedFolderIds}
+                            onToggleExpand={onToggleExpand}
                         />
                     ))}
                 </div>
@@ -143,7 +156,7 @@ interface FolderTreeProps {
     activeFolderId: string | null;
     onSelect: (folderId: string | null, path: {id: string | null, name: string}[]) => void;
     onAction: (action: 'rename' | 'delete' | 'assign' | 'createSub', folder: MediaFolderDto | null) => void;
-    refreshTrigger: number; // A prop to trigger re-fetching root folders
+    refreshTrigger: number;
     dragOverFolderId: string | null;
     onDragOverFolder: (e: React.DragEvent, folderId: string | null) => void;
     onDragLeaveFolder: (e: React.DragEvent) => void;
@@ -155,6 +168,7 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+    const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -177,6 +191,15 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleToggleExpand = (folderId: string, expand: boolean) => {
+        setExpandedFolderIds(prev => {
+            const next = new Set(prev);
+            if (expand) next.add(folderId);
+            else next.delete(folderId);
+            return next;
+        });
     };
 
     return (
@@ -240,6 +263,20 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                                                 { id: null, name: 'Ana Klasör' },
                                                 ...(folder.path || []).map(p => ({ id: p.id, name: p.name }))
                                             ];
+                                            
+                                            // Expand all parent folders in the path
+                                            setExpandedFolderIds(prev => {
+                                                const next = new Set(prev);
+                                                (folder.path || []).slice(0, -1).forEach(p => {
+                                                    if (p.id) next.add(p.id);
+                                                });
+                                                return next;
+                                            });
+
+                                            // Clear search query to show tree
+                                            setSearchQuery('');
+                                            
+                                            // Select folder
                                             onSelect(folder.id, selectPath);
                                         }}
                                         className={`group flex flex-col py-2 px-3 cursor-pointer rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-100 text-gray-700'}`}
@@ -320,6 +357,8 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                                         onDragOverFolder={onDragOverFolder}
                                         onDragLeaveFolder={onDragLeaveFolder}
                                         onDropOnFolder={onDropOnFolder}
+                                        expandedFolderIds={expandedFolderIds}
+                                        onToggleExpand={handleToggleExpand}
                                     />
                                 ))}
                                 {rootFolders.length === 0 && (
@@ -335,4 +374,3 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
         </div>
     );
 }
-
