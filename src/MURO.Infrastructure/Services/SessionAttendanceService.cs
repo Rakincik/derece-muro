@@ -68,7 +68,7 @@ public class SessionAttendanceService : ISessionAttendanceService
         {
             return await _context.SessionAttendances
                 .AsNoTracking()
-                .Where(sa => sa.UserId == userId )
+                .Where(sa => sa.UserId == userId && !sa.Session.IsDeleted && sa.Session.ScheduledStart.HasValue && sa.Session.Description != "Video (VOD)" && sa.Session.Status != MURO.Domain.Enums.SessionStatus.Cancelled)
                 .Include(sa => sa.Session).ThenInclude(s => s.Course)
                 .OrderByDescending(sa => sa.JoinedAt)
                 .Select(sa => new MyAttendanceDto(

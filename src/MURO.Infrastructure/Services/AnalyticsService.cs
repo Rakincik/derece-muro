@@ -175,14 +175,14 @@ public class AnalyticsService : IAnalyticsService
 
             // Kursa atanmış toplam öğrenci
             var totalEnrolled = await _context.CourseGroups
-                .Where(cg => cg.CourseId == courseId)
+                .Where(cg => cg.CourseId == courseId && !cg.Group.IsDeleted)
                 .Join(_context.GroupMembers, cg => cg.GroupId, gm => gm.GroupId, (cg, gm) => gm.UserId)
                 .Distinct()
                 .CountAsync();
 
             // Oturum bazlı yoklama
             var sessions = await _context.Sessions.AsNoTracking()
-                .Where(s => s.CourseId == courseId && !s.IsDeleted)
+                .Where(s => s.CourseId == courseId && !s.IsDeleted && s.ScheduledStart.HasValue && s.Description != "Video (VOD)" && s.Status != SessionStatus.Cancelled)
                 .Include(s => s.SessionAttendances)
                 .OrderBy(s => s.ScheduledStart)
                 .ToListAsync();
@@ -202,7 +202,7 @@ public class AnalyticsService : IAnalyticsService
             // Risk students: rate < 50%
             // Get per-student attendance rates
             var allStudentIds = await _context.CourseGroups
-                .Where(cg => cg.CourseId == courseId)
+                .Where(cg => cg.CourseId == courseId && !cg.Group.IsDeleted)
                 .Join(_context.GroupMembers, cg => cg.GroupId, gm => gm.GroupId, (cg, gm) => gm.User)
                 .Select(u => new EnrolledStudentDto(u.Id, $"{u.FirstName} {u.LastName}"))
                 .Distinct()
@@ -235,9 +235,8 @@ public class AnalyticsService : IAnalyticsService
                 .FirstOrDefaultAsync(u => u.Id == studentId)
                 ?? throw new KeyNotFoundException("Öğrenci bulunamadı.");
 
-            // EF Core aynı anda birden fazla sorguyu aynı context üzerinden desteklemediği için sıralı await yapıyoruz.
             var attendance = await _context.SessionAttendances.AsNoTracking()
-                .Where(sa => sa.UserId == studentId )
+                .Where(sa => sa.UserId == studentId && !sa.Session.IsDeleted && sa.Session.ScheduledStart.HasValue && sa.Session.Description != "Video (VOD)" && sa.Session.Status != SessionStatus.Cancelled)
                 .ToListAsync();
 
             var videoProgress = await _context.VideoProgresses.AsNoTracking()
