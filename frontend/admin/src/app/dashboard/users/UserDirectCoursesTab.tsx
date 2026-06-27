@@ -55,7 +55,9 @@ export function UserDirectCoursesTab({ userId, userRole }: { userId: string; use
         if (!removeTarget || !token || !tenantId) return;
         try {
             if (isInstructor) {
-                await courseApi.update(token, tenantId, removeTarget.id, { instructorId: "00000000-0000-0000-0000-000000000000" });
+                const currentInstructorIds = removeTarget.instructors?.map(i => i.id) || [];
+                const updatedInstructorIds = currentInstructorIds.filter(id => id !== userId);
+                await courseApi.update(token, tenantId, removeTarget.id, { instructorIds: updatedInstructorIds });
             } else {
                 await courseApi.removeStudent(token, tenantId, removeTarget.id, userId);
             }
@@ -98,7 +100,10 @@ export function UserDirectCoursesTab({ userId, userRole }: { userId: string; use
         setAddingCourse(courseId);
         try {
             if (isInstructor) {
-                await courseApi.update(token, tenantId, courseId, { instructorId: userId });
+                const targetCourse = searchResults.find(c => c.id === courseId);
+                const currentInstructorIds = targetCourse?.instructors?.map(i => i.id) || [];
+                const updatedInstructorIds = Array.from(new Set([...currentInstructorIds, userId]));
+                await courseApi.update(token, tenantId, courseId, { instructorIds: updatedInstructorIds });
                 success("Ders eğitmene atandı.");
             } else {
                 await courseApi.assignStudent(token, tenantId, courseId, userId);

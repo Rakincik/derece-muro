@@ -23,6 +23,7 @@ public class Course : ISoftDeletable
 
     // Navigation
     public User? Instructor { get; set; }
+    public ICollection<User> Instructors { get; set; } = new List<User>();
     public ICollection<CourseGroup> CourseGroups { get; set; } = new List<CourseGroup>();
     public ICollection<Session> Sessions { get; set; } = new List<Session>();
     public ICollection<MediaAsset> MediaAssets { get; set; } = new List<MediaAsset>();

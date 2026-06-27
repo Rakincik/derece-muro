@@ -33,4 +33,5 @@ public class User : ISoftDeletable
     public ICollection<VideoProgress> VideoProgresses { get; set; } = new List<VideoProgress>();
     public ICollection<ExamResult> ExamResults { get; set; } = new List<ExamResult>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public ICollection<Course> InstructedCourses { get; set; } = new List<Course>();
 }

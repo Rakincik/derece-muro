@@ -88,7 +88,7 @@ public class CourseService : ICourseService
                 query = query.Where(c => c.IsPublished == isPublished.Value);
 
             if (instructorId.HasValue)
-                query = query.Where(c => c.InstructorId == instructorId.Value);
+                query = query.Where(c => c.InstructorId == instructorId.Value || c.Instructors.Any(i => i.Id == instructorId.Value));
 
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -103,7 +103,8 @@ public class CourseService : ICourseService
                     c.CourseMedias.Count, c.CourseGroups.Count,
                     c.Order, c.StartDate, c.CreatedAt, c.UpdatedAt,
                     c.InstructorId,
-                    c.Instructor != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null))
+                    c.Instructor != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null,
+                    c.Instructors.Select(i => new CourseInstructorDto(i.Id, i.FirstName + " " + i.LastName, i.Email)).ToList()))
                 .ToListAsync();
 
             return new PagedResult<CourseListDto>(items, totalCount, page, pageSize, totalPages);
@@ -175,7 +176,8 @@ public class CourseService : ICourseService
                     c.CourseMedias.Count, c.CourseGroups.Count,
                     c.Order, c.StartDate, c.CreatedAt, c.UpdatedAt,
                     c.InstructorId,
-                    c.Instructor != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null))
+                    c.Instructor != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null,
+                    c.Instructors.Select(i => new CourseInstructorDto(i.Id, i.FirstName + " " + i.LastName, i.Email)).ToList()))
                 .ToListAsync();
 
             return new PagedResult<CourseListDto>(items, totalCount, page, pageSize, totalPages);
@@ -196,6 +198,7 @@ public class CourseService : ICourseService
                 .AsSplitQuery() // <-- Cartesian Explosion engelleyici (Performans)
                 .Where(c => c.Id == courseId )
                 .Include(c => c.Instructor)
+                .Include(c => c.Instructors)
                 .Include(c => c.Sessions.OrderBy(s => s.Order))
                 .Include(c => c.CourseGroups).ThenInclude(cg => cg.Group)
                 .FirstOrDefaultAsync()
@@ -235,7 +238,8 @@ public class CourseService : ICourseService
                 course.CourseGroups.Select(cg => new CourseGroupDto(
                     cg.GroupId, cg.Group.Name, cg.Mode.ToString())).ToList(),
                 course.InstructorId,
-                course.Instructor != null ? course.Instructor.FirstName + " " + course.Instructor.LastName : null);
+                course.Instructor != null ? course.Instructor.FirstName + " " + course.Instructor.LastName : null,
+                course.Instructors.Select(i => new CourseInstructorDto(i.Id, i.FirstName + " " + i.LastName, i.Email)).ToList());
         }, TimeSpan.FromMinutes(1));
     }
 
@@ -257,18 +261,42 @@ public class CourseService : ICourseService
             InstructorId = request.InstructorId
         };
 
+        if (request.InstructorIds != null && request.InstructorIds.Any())
+        {
+            var dbInstructors = await _context.Users
+                .Where(u => request.InstructorIds.Contains(u.Id))
+                .ToListAsync();
+            course.Instructors = dbInstructors;
+            if (course.InstructorId == null)
+            {
+                course.InstructorId = request.InstructorIds.First();
+            }
+        }
+        else if (request.InstructorId != null)
+        {
+            var dbInst = await _context.Users.FindAsync(request.InstructorId);
+            if (dbInst != null)
+            {
+                course.Instructors = new List<User> { dbInst };
+            }
+        }
+
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
 
         return new CourseListDto(course.Id, course.Title, course.Description, course.ThumbnailUrl,
-            course.CourseType.ToString(), course.IsPublished, 0, 0, course.Order, course.StartDate, course.CreatedAt, course.UpdatedAt, course.InstructorId, null);
+            course.CourseType.ToString(), course.IsPublished, 0, 0, course.Order, course.StartDate, course.CreatedAt, course.UpdatedAt, 
+            course.InstructorId,
+            course.Instructor != null ? course.Instructor.FirstName + " " + course.Instructor.LastName : null,
+            course.Instructors.Select(i => new CourseInstructorDto(i.Id, i.FirstName + " " + i.LastName, i.Email)).ToList());
     }
 
     public async Task<CourseListDto> UpdateCourseAsync(Guid courseId, UpdateCourseRequest request)
     {
         var course = await _context.Courses
             .Include(c => c.Instructor)
+            .Include(c => c.Instructors)
             .Include(c => c.Sessions)
             .Include(c => c.CourseMedias)
             .Include(c => c.CourseGroups)
@@ -283,8 +311,39 @@ public class CourseService : ICourseService
         if (request.IsPublished.HasValue) course.IsPublished = request.IsPublished.Value;
         if (request.Order.HasValue) course.Order = request.Order.Value;
         if (request.StartDate.HasValue) course.StartDate = request.StartDate;
-        if (request.InstructorId != Guid.Empty && request.InstructorId != null) course.InstructorId = request.InstructorId;
-        else if (request.InstructorId == Guid.Empty) course.InstructorId = null;
+
+        if (request.InstructorId != Guid.Empty && request.InstructorId != null)
+        {
+            course.InstructorId = request.InstructorId;
+            if (!course.Instructors.Any(i => i.Id == request.InstructorId))
+            {
+                var inst = await _context.Users.FindAsync(request.InstructorId);
+                if (inst != null) course.Instructors.Add(inst);
+            }
+        }
+        else if (request.InstructorId == Guid.Empty)
+        {
+            course.InstructorId = null;
+        }
+
+        if (request.InstructorIds != null)
+        {
+            var dbInstructors = await _context.Users
+                .Where(u => request.InstructorIds.Contains(u.Id))
+                .ToListAsync();
+            course.Instructors = dbInstructors;
+            if (course.Instructors.Any())
+            {
+                if (course.InstructorId == null || !request.InstructorIds.Contains(course.InstructorId.Value))
+                {
+                    course.InstructorId = request.InstructorIds.First();
+                }
+            }
+            else
+            {
+                course.InstructorId = null;
+            }
+        }
 
         course.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
@@ -294,7 +353,8 @@ public class CourseService : ICourseService
             course.CourseType.ToString(), course.IsPublished, course.CourseMedias.Count,
             course.CourseGroups.Count, course.Order, course.StartDate, course.CreatedAt, course.UpdatedAt,
             course.InstructorId,
-            course.Instructor != null ? course.Instructor.FirstName + " " + course.Instructor.LastName : null);
+            course.Instructor != null ? course.Instructor.FirstName + " " + course.Instructor.LastName : null,
+            course.Instructors.Select(i => new CourseInstructorDto(i.Id, i.FirstName + " " + i.LastName, i.Email)).ToList());
     }
 
     public async Task DeleteCourseAsync(Guid courseId)

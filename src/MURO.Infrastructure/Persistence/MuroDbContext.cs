@@ -125,6 +125,13 @@ public class MuroDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(c => c.InstructorId)
                   .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(c => c.Instructors)
+                  .WithMany(u => u.InstructedCourses)
+                  .UsingEntity<Dictionary<string, object>>(
+                      "CourseInstructors",
+                      j => j.HasOne<User>().WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.Cascade),
+                      j => j.HasOne<Course>().WithMany().HasForeignKey("CourseId").OnDelete(DeleteBehavior.Cascade));
         });
 
         // Session

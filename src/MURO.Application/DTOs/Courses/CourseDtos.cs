@@ -1,5 +1,7 @@
 namespace MURO.Application.DTOs.Courses;
 
+public record CourseInstructorDto(Guid Id, string FullName, string Email);
+
 public record CourseListDto(
     Guid Id,
     string Title,
@@ -14,7 +16,8 @@ public record CourseListDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     Guid? InstructorId,
-    string? InstructorName
+    string? InstructorName,
+    List<CourseInstructorDto>? Instructors = null
 );
 
 public record CourseDetailDto(
@@ -31,7 +34,8 @@ public record CourseDetailDto(
     List<SessionDto> Sessions,
     List<CourseGroupDto> Groups,
     Guid? InstructorId,
-    string? InstructorName
+    string? InstructorName,
+    List<CourseInstructorDto>? Instructors = null
 );
 
 public record SessionDto(
@@ -73,7 +77,8 @@ public record CreateCourseRequest(
     string CourseType,
     int? Order,
     DateTime? StartDate,
-    Guid? InstructorId
+    Guid? InstructorId,
+    List<Guid>? InstructorIds = null
 );
 
 public record UpdateCourseRequest(
@@ -84,7 +89,8 @@ public record UpdateCourseRequest(
     bool? IsPublished,
     int? Order,
     DateTime? StartDate,
-    Guid? InstructorId
+    Guid? InstructorId,
+    List<Guid>? InstructorIds = null
 );
 
 public record CreateSessionRequest(

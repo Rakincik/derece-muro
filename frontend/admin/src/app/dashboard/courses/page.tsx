@@ -65,6 +65,7 @@ interface MappedCourse {
     sessionCount: number; isPublished: boolean; createdAt: string; updatedAt: string | null; color: string;
     sessions: MappedSession[]; groups: CourseGroup[]; groupCount: number; order: number;
     instructorId: string | null; instructorName: string | null;
+    instructors?: { id: string, fullName: string, email: string }[] | null;
 }
 
 type DTab = "overview" | "sessions" | "media" | "recordings" | "docs" | "settings" | "students";
@@ -126,6 +127,7 @@ const mapCourse = (c: CourseListDto, sessions: MappedSession[] = [], detail?: Co
     groupCount: c.groupCount ?? 0, order: c.order ?? 0,
     instructorId: c.instructorId ?? detail?.instructorId ?? null,
     instructorName: c.instructorName ?? detail?.instructorName ?? null,
+    instructors: c.instructors ?? detail?.instructors ?? null,
 });
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -252,13 +254,13 @@ export default function CoursesPage() {
         } catch { toastError("Hata", "Yayın durumu güncellenemedi."); }
     }, [token, tenantId, detail]);
 
-    const handleSettingsSave = useCallback(async (id: string, data: { title: string; description: string; courseType: string; instructorId?: string }) => {
+    const handleSettingsSave = useCallback(async (id: string, data: { title: string; description: string; courseType: string; instructorId?: string; instructorIds?: string[] }) => {
         if (!token || !tenantId) return;
         try {
-            const payload = { ...data, instructorId: data.instructorId || null };
-            await courseApi.update(token, tenantId, id, payload);
-            setCourses(p => p.map(c => c.id === id ? { ...c, ...payload, type: data.courseType } : c));
-            if (detail?.id === id) setDetail(p => p ? { ...p, ...payload, type: data.courseType } : null);
+            const payload = { ...data, instructorId: data.instructorId || null, instructorIds: data.instructorIds };
+            const updatedCourse = await courseApi.update(token, tenantId, id, payload);
+            setCourses(p => p.map(c => c.id === id ? { ...c, ...payload, type: data.courseType, instructors: updatedCourse.instructors } : c));
+            if (detail?.id === id) setDetail(p => p ? { ...p, ...payload, type: data.courseType, instructors: updatedCourse.instructors } : null);
             success("Değişiklikler kaydedildi");
         } catch { toastError("Hata", "Güncellenemedi."); }
     }, [token, tenantId, detail]);
@@ -1097,7 +1099,8 @@ function SettingsTab({ course, onSave, onDelete }: { course: MappedCourse; onSav
     const [f, sF] = useState({ 
         title: course.title, description: course.description, courseType: course.type, 
         thumbnailUrl: course.thumbnailUrl || "", order: course.order, isPublished: course.isPublished,
-        instructorId: course.instructorId || "" 
+        instructorId: course.instructorId || "",
+        instructorIds: (course.instructors || []).map(i => i.id)
     });
     const [instructors, setInstructors] = useState<UserDto[]>([]);
 
@@ -1165,12 +1168,37 @@ function SettingsTab({ course, onSave, onDelete }: { course: MappedCourse; onSav
                                 <Users size={12} /> Eğitmen Ata
                             </label>
                             <CustomSelect 
-                                value={f.instructorId || ""}
-                                onChange={(val) => sF(p => ({ ...p, instructorId: val as string }))}
+                                value=""
+                                onChange={(val) => {
+                                    const instId = val as string;
+                                    if (instId && !f.instructorIds.includes(instId)) {
+                                        sF(p => ({ ...p, instructorIds: [...p.instructorIds, instId] }));
+                                    }
+                                }}
                                 options={instructorOptions}
                                 className="w-full"
                                 placeholder="Eğitmen Seçiniz"
                             />
+                            {f.instructorIds.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-slate-50 border border-[#E2E8F0]/80 rounded-xl">
+                                    {f.instructorIds.map(id => {
+                                        const inst = instructors.find(i => i.id === id);
+                                        if (!inst) return null;
+                                        return (
+                                            <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-[#1b3b6f] text-xs font-bold rounded-xl shadow-sm transition-all hover:bg-indigo-100/50">
+                                                {inst.firstName} {inst.lastName}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => sF(p => ({ ...p, instructorIds: p.instructorIds.filter(x => x !== id) }))}
+                                                    className="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors p-0.5 rounded-full"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div>

@@ -65,7 +65,7 @@ export const courseApi = {
         ),
 
     update: async (token: string, tenantId: string, courseId: string, data: {
-        title?: string; description?: string; thumbnailUrl?: string; courseType?: string; isPublished?: boolean; order?: number; instructorId?: string | null;
+        title?: string; description?: string; thumbnailUrl?: string; courseType?: string; isPublished?: boolean; order?: number; instructorId?: string | null; instructorIds?: string[];
     }) => {
         const result = await api<CourseListDto>(`/courses/${courseId}`, { method: "PUT", token, tenantId, body: JSON.stringify(data) });
         invalidateCache("courses:");

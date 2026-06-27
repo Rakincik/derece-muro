@@ -1,3 +1,9 @@
+export interface CourseInstructorDto {
+    id: string;
+    fullName: string;
+    email: string;
+}
+
 export interface CourseListDto {
     id: string;
     title: string;
@@ -12,6 +18,7 @@ export interface CourseListDto {
     updatedAt?: string | null;
     instructorId?: string | null;
     instructorName?: string | null;
+    instructors?: CourseInstructorDto[] | null;
 }
 
 export interface SessionDto {
@@ -44,6 +51,7 @@ export interface CourseDetailDto {
     groups: { groupId: string; groupName: string; mode: string }[];
     instructorId?: string | null;
     instructorName?: string | null;
+    instructors?: CourseInstructorDto[] | null;
 }
 
 export interface CourseMaterialDto {
