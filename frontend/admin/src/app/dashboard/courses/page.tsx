@@ -1101,6 +1101,13 @@ function SettingsTab({ course, onSave, onDelete }: { course: MappedCourse; onSav
     });
     const [instructors, setInstructors] = useState<UserDto[]>([]);
 
+    const instructorOptions = useMemo(() => {
+        return [
+            { label: "Eğitmen Seçiniz", value: "" },
+            ...instructors.map(i => ({ label: `${i.firstName} ${i.lastName}`, value: i.id }))
+        ];
+    }, [instructors]);
+
     useEffect(() => {
         if (!token || !tenantId) return;
         userApi.list(token, tenantId, { pageSize: 1000, role: "Instructor" })
@@ -1157,13 +1164,13 @@ function SettingsTab({ course, onSave, onDelete }: { course: MappedCourse; onSav
                             <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5 flex items-center gap-2">
                                 <Users size={12} /> Eğitmen Ata
                             </label>
-                            <select value={f.instructorId} onChange={e => sF(p => ({ ...p, instructorId: e.target.value }))}
-                                className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#A0AEC0] transition-all appearance-none cursor-pointer">
-                                <option value="">Eğitmen Seçiniz</option>
-                                {instructors.map(i => (
-                                    <option key={i.id} value={i.id}>{i.firstName} {i.lastName}</option>
-                                ))}
-                            </select>
+                            <CustomSelect 
+                                value={f.instructorId || ""}
+                                onChange={(val) => sF(p => ({ ...p, instructorId: val as string }))}
+                                options={instructorOptions}
+                                className="w-full"
+                                placeholder="Eğitmen Seçiniz"
+                            />
                         </div>
                     </div>
                     <div>
@@ -1337,6 +1344,13 @@ function CourseWizard({ onClose, onSave, isSaving }: {
 }) {
     const { token, currentTenantId: tenantId } = useAuth();
     const [instructors, setInstructors] = useState<UserDto[]>([]);
+
+    const instructorOptions = useMemo(() => {
+        return [
+            { label: "Eğitmen Seçiniz", value: "" },
+            ...instructors.map(i => ({ label: `${i.firstName} ${i.lastName}`, value: i.id }))
+        ];
+    }, [instructors]);
     const [step, setStep] = useState(1);
     const [f, sF] = useState({
         title: "", description: "", courseType: "Online", isPublished: false, instructorId: "",
@@ -1431,13 +1445,13 @@ function CourseWizard({ onClose, onSave, isSaving }: {
                                 <label className="block text-xs font-bold text-[#A0AEC0] uppercase tracking-widest mb-1.5 flex items-center gap-2">
                                     <Users size={12} /> Eğitmen Ata
                                 </label>
-                                <select value={f.instructorId} onChange={e => u("instructorId", e.target.value)}
-                                    className="w-full px-4 py-3 text-sm font-bold bg-[#E2E8F0]/20 border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#A0AEC0] transition-all appearance-none cursor-pointer">
-                                    <option value="">Eğitmen Seçiniz</option>
-                                    {instructors.map(i => (
-                                        <option key={i.id} value={i.id}>{i.firstName} {i.lastName}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect 
+                                    value={f.instructorId || ""}
+                                    onChange={(val) => u("instructorId", val as string)}
+                                    options={instructorOptions}
+                                    className="w-full"
+                                    placeholder="Eğitmen Seçiniz"
+                                />
                             </div>
                             {/* Kapak Fotoğrafı */}
                             <div>
