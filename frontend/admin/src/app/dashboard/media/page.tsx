@@ -485,7 +485,7 @@ export default function MediaLibraryPage() {
     const totalPages = pageSize === "all" ? 1 : Math.ceil(filteredAssets.length / pageSize);
 
     return (
-        <div className="min-h-[calc(100vh-64px)] md:h-[calc(100vh-64px)] flex flex-col md:flex-row md:overflow-hidden bg-white -m-4 lg:-m-8">
+        <div className="min-h-[calc(100vh-120px)] md:h-[calc(100vh-120px)] lg:h-screen flex flex-col md:flex-row md:overflow-hidden bg-white -mt-4 -mx-4 -mb-24 lg:-my-8 lg:-mx-8">
             {/* Left Pane (25%): Folder Tree */}
             <div className={`w-full md:w-[25%] md:min-w-[280px] md:max-w-[360px] h-64 md:h-full flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col ${isSidebarVisible ? 'flex' : 'hidden'}`}>
                 <FolderTree 
