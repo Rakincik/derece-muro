@@ -238,15 +238,23 @@ public class WebhookHandlerService : IWebhookHandlerService
             var existsInMedia = await _context.CourseMedias.AnyAsync(cm => cm.SessionId == session.Id);
             if (!existsInMedia)
             {
-                var courseMediaMaxOrder = await _context.CourseMedias
-                    .Where(cm => cm.CourseId == session.CourseId)
-                    .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+                var hasManualSort = await _context.CourseMedias
+                    .AnyAsync(cm => cm.CourseId == session.CourseId && cm.OrderIndex >= 0);
+
+                int orderIndex = -1;
+                if (hasManualSort)
+                {
+                    var courseMediaMaxOrder = await _context.CourseMedias
+                        .Where(cm => cm.CourseId == session.CourseId)
+                        .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+                    orderIndex = courseMediaMaxOrder + 1;
+                }
 
                 _context.CourseMedias.Add(new CourseMedia
                 {
                     CourseId = session.CourseId,
                     SessionId = session.Id,
-                    OrderIndex = courseMediaMaxOrder + 1
+                    OrderIndex = orderIndex
                 });
             }
         }

@@ -128,15 +128,23 @@ public class MediaService : IMediaService
         
         if (request.CourseId.HasValue)
         {
-            var maxOrder = await _context.CourseMedias
-                .Where(cm => cm.CourseId == request.CourseId.Value)
-                .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+            var hasManualSort = await _context.CourseMedias
+                .AnyAsync(cm => cm.CourseId == request.CourseId.Value && cm.OrderIndex >= 0);
+
+            int orderIndex = -1;
+            if (hasManualSort)
+            {
+                var maxOrder = await _context.CourseMedias
+                    .Where(cm => cm.CourseId == request.CourseId.Value)
+                    .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+                orderIndex = maxOrder + 1;
+            }
 
             _context.CourseMedias.Add(new CourseMedia
             {
                 CourseId = request.CourseId.Value,
                 MediaAssetId = asset.Id,
-                OrderIndex = maxOrder + 1
+                OrderIndex = orderIndex
             });
         }
         

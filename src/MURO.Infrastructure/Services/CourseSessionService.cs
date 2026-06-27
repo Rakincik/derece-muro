@@ -281,15 +281,23 @@ public class CourseSessionService : ICourseSessionService
         _context.MediaAssets.Add(mediaAsset);
         _context.SessionRecordings.Add(recording);
         
-        var courseMediaMaxOrder = await _context.CourseMedias
-            .Where(cm => cm.CourseId == courseId)
-            .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+        var hasManualSort = await _context.CourseMedias
+            .AnyAsync(cm => cm.CourseId == courseId && cm.OrderIndex >= 0);
+
+        int orderIndex = -1;
+        if (hasManualSort)
+        {
+            var courseMediaMaxOrder = await _context.CourseMedias
+                .Where(cm => cm.CourseId == courseId)
+                .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+            orderIndex = courseMediaMaxOrder + 1;
+        }
 
         _context.CourseMedias.Add(new CourseMedia
         {
             CourseId = courseId,
             SessionId = session.Id,
-            OrderIndex = courseMediaMaxOrder + 1
+            OrderIndex = orderIndex
         });
 
         await _context.SaveChangesAsync();

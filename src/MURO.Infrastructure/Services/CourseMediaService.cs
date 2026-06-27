@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MURO.Application.DTOs.Media;
 using MURO.Application.Interfaces;
@@ -57,6 +62,16 @@ public class CourseMediaService : ICourseMediaService
             ))
             .ToListAsync();
 
+        if (!courseMedias.Any(cm => cm.OrderIndex >= 0))
+        {
+            var comparer = new NaturalStringComparer();
+            courseMedias = courseMedias.OrderBy(cm => {
+                if (cm.Type == "Exam") return cm.ExamTitle ?? "";
+                if (cm.Type == "Session") return cm.SessionTitle ?? "";
+                return cm.MediaAsset?.Title ?? "";
+            }, comparer).ToList();
+        }
+
         return courseMedias;
     }
 
@@ -74,16 +89,23 @@ public class CourseMediaService : ICourseMediaService
         var exists = await _context.CourseMedias.AnyAsync(cm => cm.CourseId == courseId && cm.MediaAssetId == request.MediaAssetId);
         if (exists) throw new Exception("Media already assigned to this course");
 
-        // Get max order index
-        var maxOrder = await _context.CourseMedias
-            .Where(cm => cm.CourseId == courseId)
-            .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+        var hasManualSort = await _context.CourseMedias
+            .AnyAsync(cm => cm.CourseId == courseId && cm.OrderIndex >= 0);
+
+        int orderIndex = -1;
+        if (hasManualSort)
+        {
+            var maxOrder = await _context.CourseMedias
+                .Where(cm => cm.CourseId == courseId)
+                .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+            orderIndex = maxOrder + 1;
+        }
 
         var courseMedia = new CourseMedia
         {
             CourseId = courseId,
             MediaAssetId = request.MediaAssetId,
-            OrderIndex = maxOrder + 1
+            OrderIndex = orderIndex
         };
 
         _context.CourseMedias.Add(courseMedia);
@@ -114,15 +136,23 @@ public class CourseMediaService : ICourseMediaService
         var exists = await _context.CourseMedias.AnyAsync(cm => cm.CourseId == courseId && cm.ExamId == request.ExamId);
         if (exists) throw new Exception("Exam already assigned to this course");
 
-        var maxOrder = await _context.CourseMedias
-            .Where(cm => cm.CourseId == courseId)
-            .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+        var hasManualSort = await _context.CourseMedias
+            .AnyAsync(cm => cm.CourseId == courseId && cm.OrderIndex >= 0);
+
+        int orderIndex = -1;
+        if (hasManualSort)
+        {
+            var maxOrder = await _context.CourseMedias
+                .Where(cm => cm.CourseId == courseId)
+                .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+            orderIndex = maxOrder + 1;
+        }
 
         var courseMedia = new CourseMedia
         {
             CourseId = courseId,
             ExamId = request.ExamId,
-            OrderIndex = maxOrder + 1
+            OrderIndex = orderIndex
         };
 
         _context.CourseMedias.Add(courseMedia);
@@ -157,22 +187,33 @@ public class CourseMediaService : ICourseMediaService
             .OrderBy(ma => ma.Title)
             .ToListAsync();
 
-        var maxOrder = await _context.CourseMedias
-            .Where(cm => cm.CourseId == courseId)
-            .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+        var hasManualSort = await _context.CourseMedias
+            .AnyAsync(cm => cm.CourseId == courseId && cm.OrderIndex >= 0);
+
+        int orderIndex = -1;
+        if (hasManualSort)
+        {
+            var maxOrder = await _context.CourseMedias
+                .Where(cm => cm.CourseId == courseId)
+                .MaxAsync(cm => (int?)cm.OrderIndex) ?? -1;
+            orderIndex = maxOrder + 1;
+        }
 
         foreach (var asset in assets)
         {
             var exists = await _context.CourseMedias.AnyAsync(cm => cm.CourseId == courseId && cm.MediaAssetId == asset.Id);
             if (!exists)
             {
-                maxOrder++;
                 _context.CourseMedias.Add(new CourseMedia
                 {
                     CourseId = courseId,
                     MediaAssetId = asset.Id,
-                    OrderIndex = maxOrder
+                    OrderIndex = orderIndex
                 });
+                if (hasManualSort)
+                {
+                    orderIndex++;
+                }
             }
         }
 
@@ -223,5 +264,53 @@ public class CourseMediaService : ICourseMediaService
 
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"courses:");
+    }
+
+    private class NaturalStringComparer : IComparer<string>
+    {
+        private static readonly CultureInfo TurkishCulture = new CultureInfo("tr-TR");
+
+        public int Compare(string? x, string? y)
+        {
+            if (x == y) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
+            int ix = 0;
+            int iy = 0;
+            while (ix < x.Length && iy < y.Length)
+            {
+                if (char.IsDigit(x[ix]) && char.IsDigit(y[iy]))
+                {
+                    string numX = "";
+                    while (ix < x.Length && char.IsDigit(x[ix])) numX += x[ix++];
+                    string numY = "";
+                    while (iy < y.Length && char.IsDigit(y[iy])) numY += y[iy++];
+
+                    if (long.TryParse(numX, out long valX) && long.TryParse(numY, out long valY))
+                    {
+                        int comp = valX.CompareTo(valY);
+                        if (comp != 0) return comp;
+                    }
+                    else
+                    {
+                        int comp = string.Compare(numX, numY, true, TurkishCulture);
+                        if (comp != 0) return comp;
+                    }
+                }
+                else
+                {
+                    char cx = x[ix];
+                    char cy = y[iy];
+                    
+                    int comp = string.Compare(cx.ToString(), cy.ToString(), true, TurkishCulture);
+                    if (comp != 0) return comp;
+                    ix++;
+                    iy++;
+                }
+            }
+
+            return x.Length.CompareTo(y.Length);
+        }
     }
 }
