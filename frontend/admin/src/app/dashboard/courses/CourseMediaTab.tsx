@@ -414,16 +414,16 @@ export function CourseMediaTab({
                                     onDragOver={isReorderEnabled ? (e) => handleDragOver(e, globalIndex) : undefined}
                                     onDrop={isReorderEnabled ? handleDrop : undefined}
                                     onDragEnd={isReorderEnabled ? handleDrop : undefined}
-                                    className={`flex items-center gap-5 bg-white border shadow-sm p-4 rounded-2xl transition-all group ${activeVideo?.id === media.id ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md' : 'border-[#E2E8F0]/60 hover:shadow-md hover:border-blue-300'} ${draggedItemIndex === globalIndex ? 'opacity-50 scale-[1.02]' : ''} ${isReorderEnabled && !(media as any).isFake ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                                    className={`flex items-center gap-2 sm:gap-5 bg-white border shadow-sm p-3 sm:p-4 rounded-2xl transition-all group ${activeVideo?.id === media.id ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md' : 'border-[#E2E8F0]/60 hover:shadow-md hover:border-blue-300'} ${draggedItemIndex === globalIndex ? 'opacity-50 scale-[1.02]' : ''} ${isReorderEnabled && !(media as any).isFake ? 'cursor-grab active:cursor-grabbing' : ''}`}
                                 >
-                                <div className="w-10 flex items-center justify-center shrink-0 border-r border-[#E2E8F0]/80 pr-3">
-                                    <span className="text-base font-black text-[#1B3B6F]/60 font-mono drop-shadow-sm">
+                                <div className="w-8 sm:w-10 flex items-center justify-center shrink-0 border-r border-[#E2E8F0]/80 pr-2 sm:pr-3">
+                                    <span className="text-xs sm:text-base font-black text-[#1B3B6F]/60 font-mono drop-shadow-sm">
                                         {(combinedMedias.findIndex(m => m.id === media.id) + 1).toString().padStart(2, '0')}
                                     </span>
                                 </div>
                                 
                                 <div 
-                                    className="p-2 cursor-pointer shrink-0" 
+                                    className="p-1 sm:p-2 cursor-pointer shrink-0" 
                                     onClick={(e) => { e.stopPropagation(); toggleItemSelection(media.id); }}
                                 >
                                     <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selectedItems.has(media.id) ? 'bg-[#1B3B6F] border-[#1B3B6F] text-white' : 'border-[#A0AEC0]/40 text-transparent hover:border-[#1B3B6F]/50'}`}>
@@ -435,15 +435,15 @@ export function CourseMediaTab({
                                         <GripVertical size={20} />
                                     </div>
                                 ) : (
-                                    <div className="w-5" /> // placeholder
+                                    <div className="w-4 sm:w-5" /> // placeholder
                                 )}
                                 
                                 {media.type === "Exam" ? (
                                     <Tooltip content="Sınav"><button 
                                         disabled
-                                        className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-inner bg-purple-50 text-purple-600"
+                                        className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 shadow-inner bg-purple-50 text-purple-600"
                                     >
-                                        <FileText size={24} />
+                                        <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </button></Tooltip>
                                 ) : media.type === "Session" ? (() => {
                                     const rec = recordings.find(r => r.sessionId === media.sessionId && (r.playbackUrl || r.hlsPath));
@@ -480,10 +480,10 @@ export function CourseMediaTab({
                                                     }
                                                 }
                                             }}
-                                            className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-inner transition-all ${canPlay ? (activeVideo?.id === media.id ? 'bg-[#0A1931] text-white shadow-lg' : 'hover:scale-105 active:scale-95 cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100') : 'bg-red-50 text-red-500/50 cursor-not-allowed'}`}
+                                            className={`w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 shadow-inner transition-all ${canPlay ? (activeVideo?.id === media.id ? 'bg-[#0A1931] text-white shadow-lg' : 'hover:scale-105 active:scale-95 cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100') : 'bg-red-50 text-red-500/50 cursor-not-allowed'}`}
                                             title={canPlay ? (activeVideo?.id === media.id ? "Kapat" : "Oynat") : "Canlı Ders (Kayıt Yok)"}
                                         >
-                                            {activeVideo?.id === media.id ? <X size={24} /> : <Play size={24} />}
+                                            {activeVideo?.id === media.id ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6" />}
                                         </button>
                                     );
                                 })() : (
@@ -504,10 +504,10 @@ export function CourseMediaTab({
                                                 }
                                             }
                                         }}
-                                        className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-inner transition-all hover:scale-105 active:scale-95 cursor-pointer ${activeVideo?.id === media.id ? 'bg-[#0A1931] text-white shadow-lg' : isRecording ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                                        className={`w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 shadow-inner transition-all hover:scale-105 active:scale-95 cursor-pointer ${activeVideo?.id === media.id ? 'bg-[#0A1931] text-white shadow-lg' : isRecording ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                                         title={activeVideo?.id === media.id ? "Kapat" : "Oynat"}
                                     >
-                                        {activeVideo?.id === media.id ? <X size={24} /> : <Play size={24} />}
+                                        {activeVideo?.id === media.id ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6" />}
                                     </button>
                                 )}
                                 
@@ -574,15 +574,15 @@ export function CourseMediaTab({
                                     </div>
                                 ) : (
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="text-[#0A1931] font-bold text-base truncate">{media.type === "Exam" ? media.examTitle : media.type === "Session" ? media.sessionTitle : media.mediaAsset?.title}</p>
+                                        <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
+                                            <p className="text-[#0A1931] font-bold text-sm sm:text-base truncate">{media.type === "Exam" ? media.examTitle : media.type === "Session" ? media.sessionTitle : media.mediaAsset?.title}</p>
                                             {media.type === "Exam" && (
-                                                <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-wider">
+                                                <span className="px-1 sm:px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[8px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                                                     SINAV / QUİZ
                                                 </span>
                                             )}
                                             {isRecording && (
-                                                <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[10px] font-black uppercase tracking-wider">
+                                                <span className="px-1 sm:px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[8px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                                                     CANLI DERS
                                                 </span>
                                             )}
@@ -599,13 +599,13 @@ export function CourseMediaTab({
                                     </div>
                                 )}
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                                     {isRecording && recording && onViewAttendance && (
                                         <Tooltip content="Yoklama Gör"><button 
                                             onClick={() => onViewAttendance(recording.sessionId)}
-                                            className="p-3 text-[#A0AEC0] hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                                            className="p-2 sm:p-3 text-[#A0AEC0] hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
                                         >
-                                            <Users size={18} />
+                                            <Users className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                                         </button></Tooltip>
                                     )}
                                     {!(media as any).isFake && (
@@ -638,10 +638,10 @@ export function CourseMediaTab({
                                                         href="/dashboard/media"
                                                         target="_blank"
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="p-3 text-[#A0AEC0] hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                        className="p-2 sm:p-3 text-[#A0AEC0] hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                                         title="Kütüphanede Göster"
                                                     >
-                                                        <ExternalLink size={18} />
+                                                        <ExternalLink className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                                                     </Link>
                                                 )}
                                                 {media.type === "Media" && media.mediaAssetId && (
@@ -651,9 +651,9 @@ export function CourseMediaTab({
                                                             setEditingTitle(media.mediaAsset?.title || "");
                                                             setEditingMediaId(media.id);
                                                         }}
-                                                        className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                        className="p-2 sm:p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                                                     >
-                                                        <Edit2 size={18} />
+                                                        <Edit2 className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                                                     </button></Tooltip>
                                                 )}
                                                 {media.type === "Session" && media.sessionId && (
@@ -665,9 +665,9 @@ export function CourseMediaTab({
                                                             setEditingVideoUrl(sess?.videoUrl || "");
                                                             setEditingMediaId(media.id);
                                                         }}
-                                                        className="p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                        className="p-2 sm:p-3 text-[#A0AEC0] hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                                                     >
-                                                        <Edit2 size={18} />
+                                                        <Edit2 className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                                                     </button></Tooltip>
                                                 )}
                                                 <button 
@@ -675,10 +675,10 @@ export function CourseMediaTab({
                                                         e.stopPropagation();
                                                         setInlineDeleteConfirm(media.id);
                                                     }}
-                                                    className="p-3 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    className="p-2 sm:p-3 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                                                     title={media.type === "Media" ? "Dersten Çıkar" : "Tamamen Sil"}
                                                 >
-                                                    <Trash2 size={18} />
+                                                    <Trash2 className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                                                 </button>
                                             </>
                                         )
