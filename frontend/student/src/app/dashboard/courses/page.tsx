@@ -67,7 +67,7 @@ export default function CoursesPage() {
                     <h1 className="text-2xl font-bold text-[#0A1931]">Derslerim</h1>
                     <p className="text-[#A9A9A9] text-sm mt-1">{courses.length} kurs kayıtlı</p>
                 </div>
-                <div className="flex items-center gap-2 w-full overflow-x-auto pb-2 hide-scrollbar md:flex-wrap md:w-auto md:pb-0">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto overflow-visible">
                     <input
                         type="text"
                         placeholder="Kurs ara..."
