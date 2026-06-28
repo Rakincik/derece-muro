@@ -3,8 +3,8 @@
 # ============================================
 # Subdomains:
 #   trk.muro.click      → Student Frontend (:3002)
-#   trk-ad.muro.click   → Admin Frontend   (:3001)
-#   trk-ap.muro.click   → API Backend      (:5292)
+#   trk-adm.muro.click   → Admin Frontend   (:3001)
+#   trk-api.muro.click   → API Backend      (:5292)
 # ============================================
 # Kullanım:
 #   cp .env.3u .env
@@ -70,13 +70,13 @@ services:
       - Bbb__WebhookSharedSecret=${BBB_WEBHOOK_SECRET:-placeholder}
       - Bbb__DefaultAttendeePw=attendee123
       - Bbb__DefaultModeratorPw=moderator123
-      - Bbb__Defaults__LogoutURL=${ADMIN_URL:-https://trk-ad.muro.click}/dashboard/courses
+      - Bbb__Defaults__LogoutURL=${ADMIN_URL:-https://trk-adm.muro.click}/dashboard/courses
       - Cors__AllowedOrigins__0=https://trk.muro.click
-      - Cors__AllowedOrigins__1=https://trk-ad.muro.click
-      - Cors__AllowedOrigins__2=https://trk-ap.muro.click
+      - Cors__AllowedOrigins__1=https://trk-adm.muro.click
+      - Cors__AllowedOrigins__2=https://trk-api.muro.click
       - Cors__AllowedOrigins__3=http://trk.muro.click
-      - Cors__AllowedOrigins__4=http://trk-ad.muro.click
-      - Cors__AllowedOrigins__5=http://trk-ap.muro.click
+      - Cors__AllowedOrigins__4=http://trk-adm.muro.click
+      - Cors__AllowedOrigins__5=http://trk-api.muro.click
       - Tenant__BaseDomain=${BASE_DOMAIN:-muro.click}
       - Gemini__ApiKey=${GEMINI_API_KEY:-}
       - Webhook__Secret=${WEBHOOK_SECRET:-CHANGE_THIS}
@@ -127,7 +127,7 @@ services:
       context: ./frontend/admin
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://trk-ap.muro.click/api/v1
+        NEXT_PUBLIC_API_URL: https://trk-api.muro.click/api/v1
     container_name: muro_trk_admin
     restart: unless-stopped
     ports:
@@ -145,7 +145,7 @@ services:
       context: ./frontend/student
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://trk-ap.muro.click/api/v1
+        NEXT_PUBLIC_API_URL: https://trk-api.muro.click/api/v1
     container_name: muro_trk_student
     restart: unless-stopped
     ports:
