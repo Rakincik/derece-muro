@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Serve admin under /admin/ path for single-domain setup
-  basePath: '/admin',
+  // Subdomain deployment — no basePath needed
+  // (basePath was '/admin' for single-domain setup)
 
   // Standalone output for Docker deployment
   output: 'standalone',

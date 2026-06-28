@@ -213,9 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("muro_student_refresh");
         clearCache();
         
-        // Nginx trailing slash loop (301 <-> 308) hatasını önlemek için window location ile "/admin/login" adresine gidiyoruz.
+        // Subdomain deployment — login is at root, no /admin prefix needed.
         if (typeof window !== "undefined") {
-            window.location.href = "/admin/login";
+            window.location.href = "/login";
         }
     };
 

@@ -56,7 +56,7 @@ public class SystemController : ControllerBase
         return Ok(new
         {
             ThemeColor = "#1D4ED8",
-            LogoUrl = "/monopol_logo.png",
+            LogoUrl = "/icon.png",
             FaviconUrl = "/favicon.ico",
             CustomCss = "",
             Title = "Monopol"
