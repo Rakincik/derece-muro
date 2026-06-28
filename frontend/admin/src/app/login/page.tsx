@@ -34,9 +34,29 @@ export default function AdminLoginPage() {
         if (r) localStorage.setItem("muro_student_refresh", r);
         
         localStorage.removeItem("muro_token");
-        localStorage.removeItem("muro_refresh");
+        const isDev = window.location.hostname === "localhost";
+        let targetUrl = "";
+        
+        if (isDev) {
+          targetUrl = `http://localhost:3000/dashboard`;
+        } else {
+          // Subdomain architecture: e.g. 3u-ad.muro.click -> 3u.muro.click
+          const currentHost = window.location.hostname;
+          let studentHost = currentHost;
+          
+          if (currentHost.startsWith("3u-ad.")) {
+            studentHost = currentHost.replace("3u-ad.", "3u.");
+          } else if (currentHost.includes("-ad.")) {
+             studentHost = currentHost.replace("-ad.", ".");
+          } else {
+             studentHost = currentHost.replace("admin.", "");
+          }
+          
+          targetUrl = `https://${studentHost}/dashboard`;
+        }
 
-        window.location.href = "/"; // Öğrenci portalının adresi
+        // Token'ı URL ile aktar
+        window.location.href = `${targetUrl}?_token=${encodeURIComponent(t || "")}&_refresh=${encodeURIComponent(r || "")}`;
       } else {
         router.push("/dashboard");
       }
