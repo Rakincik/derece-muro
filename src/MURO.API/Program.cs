@@ -247,7 +247,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(_ => true)
             .AllowCredentials()
             .WithHeaders("Authorization", "Content-Type", "X-Tenant-Id", "X-Requested-With", "X-Correlation-Id")
             .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
