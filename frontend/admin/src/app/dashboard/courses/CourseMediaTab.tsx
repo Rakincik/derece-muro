@@ -253,15 +253,41 @@ export function CourseMediaTab({
 
     const combinedMedias = useMemo(() => {
         const list = [...medias];
-        if (!isReorderEnabled) {
-            list.sort((a, b) => {
-                const titleA = a.type === "Exam" ? (a.examTitle || "") : a.type === "Session" ? (a.sessionTitle || "") : (a.mediaAsset?.title || "");
-                const titleB = b.type === "Exam" ? (b.examTitle || "") : b.type === "Session" ? (b.sessionTitle || "") : (b.mediaAsset?.title || "");
-                return titleA.localeCompare(titleB, "tr", { numeric: true, sensitivity: "base" });
-            });
-        }
+        list.sort((a, b) => {
+            // 1. Sıralama önceliği: Admin elle sıralama yaptıysa (orderIndex)
+            if (a.orderIndex !== b.orderIndex) {
+                return a.orderIndex - b.orderIndex;
+            }
+            
+            // 2. Sıralama önceliği: Aynı sıradaysa tarihe göre (eskiden yeniye)
+            let dateA = "";
+            let dateB = "";
+            
+            if (a.type === "Session" && a.sessionId) {
+                const sess = sessions.find(s => s.id === a.sessionId);
+                dateA = sess?.scheduledStart || "";
+            } else if (a.type === "Video" && a.mediaAsset) {
+                dateA = a.mediaAsset.createdAt || "";
+            }
+            
+            if (b.type === "Session" && b.sessionId) {
+                const sess = sessions.find(s => s.id === b.sessionId);
+                dateB = sess?.scheduledStart || "";
+            } else if (b.type === "Video" && b.mediaAsset) {
+                dateB = b.mediaAsset.createdAt || "";
+            }
+            
+            if (dateA && dateB) {
+                return dateA.localeCompare(dateB);
+            }
+            if (dateA) return -1;
+            if (dateB) return 1;
+            
+            // 3. Sıralama önceliği: ID'ye göre
+            return a.id.localeCompare(b.id);
+        });
         return list;
-    }, [medias, isReorderEnabled]);
+    }, [medias, sessions]);
 
     const filteredMedias = combinedMedias.filter(media => {
         const isRecording = media.type === "Session" || !!recordings.find(r => r.mediaAssetId && r.mediaAssetId === media?.mediaAsset?.id);

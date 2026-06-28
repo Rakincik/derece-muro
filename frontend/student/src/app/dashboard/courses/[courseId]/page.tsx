@@ -151,7 +151,7 @@ export default function CourseDetailPage() {
                 });
 
                 // Map CourseMediaDto to RecordingDto for the player and sidebar
-                const mappedRecordings: RecordingDto[] = readyCourseMedias.map((cm: CourseMediaDto) => {
+                const mappedRecordings: any[] = readyCourseMedias.map((cm: CourseMediaDto) => {
                     const matchRec = typedRecs.find(r => r.sessionId === cm.sessionId);
                     const matchSession = sess.find((s: any) => s.id === cm.sessionId);
                     return {
@@ -171,8 +171,24 @@ export default function CourseDetailPage() {
                         type: cm.examId ? 'Exam' : (cm.type === 'Video' || cm.mediaAsset?.hlsPath ? 'Video' : 'Recording'),
                         examId: cm.examId || undefined,
                         videoUrl: matchSession?.videoUrl || null,
-                        mediaAssetId: cm.mediaAssetId || matchRec?.mediaAssetId || null
+                        mediaAssetId: cm.mediaAssetId || matchRec?.mediaAssetId || null,
+                        orderIndex: cm.orderIndex
                     };
+                });
+
+                // Sıralamayı admin sırası ve tarihe göre (eskiden yeniye) düzenle
+                mappedRecordings.sort((a, b) => {
+                    if (a.orderIndex !== b.orderIndex) {
+                        return (a.orderIndex || 0) - (b.orderIndex || 0);
+                    }
+                    const dateA = a.scheduledStart || a.createdAt || "";
+                    const dateB = b.scheduledStart || b.createdAt || "";
+                    if (dateA && dateB) {
+                        return dateA.localeCompare(dateB);
+                    }
+                    if (dateA) return -1;
+                    if (dateB) return 1;
+                    return a.id.localeCompare(b.id);
                 });
                 
                 setRecordings(mappedRecordings);
@@ -408,6 +424,7 @@ export default function CourseDetailPage() {
                                                     <PremiumPlayer 
                                                         key={activeRec.id} 
                                                         src={details.url} 
+                                                        mediaId={activeRec.id}
                                                         poster={activeRec.thumbnailPath ? getFileUrl(activeRec.thumbnailPath) : null}
                                                         onLoaded={() => setIframeLoaded(true)} 
                                                     />
@@ -442,6 +459,7 @@ export default function CourseDetailPage() {
                                             <PremiumPlayer 
                                                 key={activeRec.id} 
                                                 src={src} 
+                                                mediaId={activeRec.id}
                                                 poster={activeRec.thumbnailPath ? getFileUrl(activeRec.thumbnailPath) : null}
                                                 onLoaded={() => setIframeLoaded(true)} 
                                             />

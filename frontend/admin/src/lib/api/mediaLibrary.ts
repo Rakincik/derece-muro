@@ -134,6 +134,17 @@ export const reorderCourseMedias = async (courseId: string, courseMediaIds: stri
     });
 };
 
+export interface DiskUsageDto {
+    totalSpace: number;
+    freeSpace: number;
+    usedSpace: number;
+    percentage: number;
+}
+
+export const getDiskUsage = async (): Promise<DiskUsageDto> => {
+    return fetchApi('/files/disk-usage');
+};
+
 export const mediaLibraryApi = {
     getFolders,
     getFolder,
@@ -154,5 +165,6 @@ export const mediaLibraryApi = {
     removeMediaFromCourse,
     removeItemFromCourse,
     reorderCourseMedias,
-    getTranscodeProgress
+    getTranscodeProgress,
+    getDiskUsage
 };

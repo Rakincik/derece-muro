@@ -86,7 +86,7 @@ const FolderNode: React.FC<FolderNodeProps> = ({
                     </button>
                     <Folder size={16} className={isActive ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'} />
                     <Tooltip content={folder.name} className="min-w-0 flex-1" position="top">
-                        <span className="text-sm select-none block w-full break-words whitespace-normal leading-tight pr-2 py-0.5">{folder.name}</span>
+                        <span className="text-[14.5px] font-semibold select-none block w-full break-words whitespace-normal leading-tight pr-2 py-0.5">{folder.name}</span>
                     </Tooltip>
                 </div>
 
@@ -152,6 +152,15 @@ const FolderNode: React.FC<FolderNodeProps> = ({
     );
 };
 
+const formatBytes = (bytes: number, decimals = 1) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
 interface FolderTreeProps {
     activeFolderId: string | null;
     onSelect: (folderId: string | null, path: {id: string | null, name: string}[]) => void;
@@ -169,6 +178,13 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
+    const [diskUsage, setDiskUsage] = useState<{ totalSpace: number; freeSpace: number; usedSpace: number; percentage: number } | null>(null);
+
+    useEffect(() => {
+        mediaLibraryApi.getDiskUsage()
+            .then(setDiskUsage)
+            .catch(err => console.error("Failed to load disk usage", err));
+    }, [refreshTrigger]);
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -283,7 +299,7 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
                                             <Folder size={16} className={isActive ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'} />
-                                            <span className="text-sm font-medium select-none block flex-1 break-words whitespace-normal leading-tight pr-2 py-0.5">{folder.name}</span>
+                                            <span className="text-[14.5px] font-semibold select-none block flex-1 break-words whitespace-normal leading-tight pr-2 py-0.5">{folder.name}</span>
                                             
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0">
                                                 <Tooltip content="Alt Klasör Ekle">
@@ -335,7 +351,7 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                             onDrop={(e) => onDropOnFolder(e, null)}
                         >
                             <Folder size={18} className={activeFolderId === null ? 'text-blue-600' : 'text-gray-400'} />
-                            <span className="text-sm font-semibold">Ana Klasör</span>
+                            <span className="text-[14.5px] font-semibold">Ana Klasör</span>
                         </div>
 
                         {isLoading ? (
@@ -371,6 +387,27 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                     </>
                 )}
             </div>
+
+            {/* Storage Usage Widget */}
+            {diskUsage && (
+                <div className="p-4 border-t border-gray-100 bg-white flex flex-col gap-2 shrink-0 select-none">
+                    <div className="flex items-center justify-between text-xs font-bold text-gray-500">
+                        <span className="flex items-center gap-1.5 leading-tight">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 shrink-0"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                            Depolama Alanı Kullanım Yüzdesi
+                        </span>
+                        <span className={`text-[11px] font-extrabold shrink-0 ${diskUsage.percentage > 90 ? 'text-red-500' : 'text-[#1B3B6F]'}`}>
+                            %{diskUsage.percentage}
+                        </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden border border-gray-200/50">
+                        <div 
+                            className={`h-full transition-all duration-500 ${diskUsage.percentage > 90 ? 'bg-red-500 animate-pulse' : 'bg-[#1B3B6F]'}`}
+                            style={{ width: `${diskUsage.percentage}%` }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text;
+using System.IO;
 
 namespace MURO.API.Controllers
 {
@@ -49,6 +50,34 @@ namespace MURO.API.Controllers
             catch
             {
                 return BadRequest();
+            }
+        }
+
+        [HttpGet("disk-usage")]
+        [Authorize] // Sadece giriş yapmış kullanıcılar görebilsin
+        public IActionResult GetDiskUsage()
+        {
+            try
+            {
+                var root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+                var drive = new DriveInfo(root ?? "/");
+
+                long totalSpace = drive.TotalSize;
+                long freeSpace = drive.AvailableFreeSpace;
+                long usedSpace = totalSpace - freeSpace;
+                double percentage = (double)usedSpace / totalSpace * 100;
+
+                return Ok(new
+                {
+                    TotalSpace = totalSpace,
+                    FreeSpace = freeSpace,
+                    UsedSpace = usedSpace,
+                    Percentage = Math.Round(percentage, 2)
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Disk bilgisi alinamadi.", Error = ex.Message });
             }
         }
     }

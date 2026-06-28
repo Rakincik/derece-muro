@@ -6,12 +6,13 @@ import Hls from "hls.js";
 
 interface PremiumPlayerProps {
     src: string;
+    mediaId?: string;
     onLoaded?: () => void;
     autoplay?: boolean;
     poster?: string | null;
 }
 
-export const PremiumPlayer = React.memo(function PremiumPlayer({ src, onLoaded, autoplay = false, poster }: PremiumPlayerProps) {
+export const PremiumPlayer = React.memo(function PremiumPlayer({ src, mediaId, onLoaded, autoplay = false, poster }: PremiumPlayerProps) {
     const plyrRef = useRef<APITypes>(null);
     const hlsRef = useRef<Hls | null>(null);
     const lastValidSrcRef = useRef<string>(src);
@@ -34,6 +35,10 @@ export const PremiumPlayer = React.memo(function PremiumPlayer({ src, onLoaded, 
     const isHls = fullSrc.includes(".m3u8");
 
     useEffect(() => {
+        let videoElementCleanup: HTMLVideoElement | null = null;
+        let handleLoadedMetadataCleanup: (() => void) | null = null;
+        let handleTimeUpdateCleanup: (() => void) | null = null;
+
         // HLS Kurulumu
         const initializePlayer = () => {
             const plyrInstance = plyrRef.current?.plyr;
@@ -41,6 +46,35 @@ export const PremiumPlayer = React.memo(function PremiumPlayer({ src, onLoaded, 
 
             const videoElement = plyrInstance.media as HTMLVideoElement;
             if (!videoElement) return;
+            videoElementCleanup = videoElement;
+
+            const handleLoadedMetadata = () => {
+                if (mediaId) {
+                    const savedTimeStr = localStorage.getItem(`muro_video_time_${mediaId}`);
+                    const savedTime = savedTimeStr ? parseFloat(savedTimeStr) : 0;
+                    if (savedTime > 3 && Math.abs(videoElement.currentTime - savedTime) > 1) {
+                        videoElement.currentTime = savedTime;
+                    }
+                }
+                if (onLoaded) onLoaded();
+            };
+            handleLoadedMetadataCleanup = handleLoadedMetadata;
+
+            const handleTimeUpdate = () => {
+                if (mediaId && videoElement.currentTime > 0 && !videoElement.seeking) {
+                    const duration = videoElement.duration || 1;
+                    const percent = (videoElement.currentTime / duration) * 100;
+                    if (percent > 98) {
+                        localStorage.removeItem(`muro_video_time_${mediaId}`);
+                    } else {
+                        localStorage.setItem(`muro_video_time_${mediaId}`, videoElement.currentTime.toString());
+                    }
+                }
+            };
+            handleTimeUpdateCleanup = handleTimeUpdate;
+
+            videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+            videoElement.addEventListener("timeupdate", handleTimeUpdate);
 
             if (isHls) {
                 if (Hls.isSupported()) {
@@ -55,6 +89,15 @@ export const PremiumPlayer = React.memo(function PremiumPlayer({ src, onLoaded, 
                     hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
                         const availableQualities = data.levels.map((l) => l.height).sort((a, b) => b - a);
                         setQualities(availableQualities);
+                        
+                        if (mediaId) {
+                            const savedTimeStr = localStorage.getItem(`muro_video_time_${mediaId}`);
+                            const savedTime = savedTimeStr ? parseFloat(savedTimeStr) : 0;
+                            if (savedTime > 3 && Math.abs(videoElement.currentTime - savedTime) > 1) {
+                                videoElement.currentTime = savedTime;
+                            }
+                        }
+
                         if (onLoaded) onLoaded();
                         if (autoplay) {
                             const playPromise = videoElement.play();
@@ -64,34 +107,19 @@ export const PremiumPlayer = React.memo(function PremiumPlayer({ src, onLoaded, 
                         }
                     });
 
-                    // HLS kalite seviyelerini Plyr'a tanıt
-                    hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
-                        // Plyr üzerinden kalite menüsünü doldurmak istersen burada yapabiliriz.
-                    });
-
                     hlsRef.current = hls;
 
                 } else if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
                     // Native HLS (Safari vb.)
                     videoElement.src = fullSrc;
-                    videoElement.addEventListener("loadedmetadata", () => {
-                        if (onLoaded) onLoaded();
-                        if (autoplay) {
-                            videoElement.play().catch(() => {});
-                        }
-                    });
+                    videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
                 } else {
                     setSupported(false);
                 }
             } else {
                 // Native MP4 (Direct File)
                 videoElement.src = fullSrc;
-                videoElement.addEventListener("loadeddata", () => {
-                    if (onLoaded) onLoaded();
-                    if (autoplay) {
-                        videoElement.play().catch(() => {});
-                    }
-                });
+                videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
             }
         };
 
@@ -101,12 +129,20 @@ export const PremiumPlayer = React.memo(function PremiumPlayer({ src, onLoaded, 
 
         return () => {
             clearTimeout(timer);
+            if (videoElementCleanup) {
+                if (handleLoadedMetadataCleanup) {
+                    videoElementCleanup.removeEventListener("loadedmetadata", handleLoadedMetadataCleanup);
+                }
+                if (handleTimeUpdateCleanup) {
+                    videoElementCleanup.removeEventListener("timeupdate", handleTimeUpdateCleanup);
+                }
+            }
             if (hlsRef.current) {
                 try { hlsRef.current.destroy(); } catch (e) { console.error("HLS destroy error", e); }
                 hlsRef.current = null;
             }
         };
-    }, [fullSrc, isHls, onLoaded, autoplay]);
+    }, [fullSrc, isHls, onLoaded, autoplay, mediaId]);
 
     if (!supported) {
         return (

@@ -202,7 +202,7 @@ public class CourseSessionService : ICourseSessionService
                 try
                 {
                     var isRunning = await bbbService.IsMeetingRunningAsync(s.BbbMeetingId);
-                    if (!isRunning)
+                    if (!isRunning && DateTime.UtcNow - s.CreatedAt > TimeSpan.FromMinutes(10))
                     {
                         s.Status = SessionStatus.Ended;
                         dbChanged = true;

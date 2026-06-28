@@ -462,7 +462,16 @@ export default function CoursesPage() {
 
     const filtered = useMemo(() => {
         let result = courses.filter(c => {
-            const ms = !search || c.title.toLocaleLowerCase('tr-TR').includes(search.toLocaleLowerCase('tr-TR'));
+            const cleanTitle = c.title
+                .toLocaleLowerCase('tr')
+                .replace(/[^a-z0-9ığüşöç]/g, '');
+            const queryWords = search
+                .toLocaleLowerCase('tr')
+                .split(/\s+/)
+                .map(w => w.replace(/[^a-z0-9ığüşöç]/g, ''))
+                .filter(Boolean);
+            const ms = !search || queryWords.every(word => cleanTitle.includes(word));
+            
             const mst = statusFilter === "all" || (statusFilter === "published" ? c.isPublished : !c.isPublished);
             return ms && mst;
         });
@@ -540,13 +549,27 @@ export default function CoursesPage() {
 
                         {/* Actions & Stats Row */}
                         <div className="flex flex-row md:flex-col w-full md:w-auto gap-3 shrink-0 items-center md:items-stretch justify-between">
-                            <div className="p-2 sm:p-4 rounded-xl md:rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 text-center flex md:flex-col items-center justify-center gap-2 md:gap-0 shrink-0">
-                                <Users className="text-white/40 w-4 h-4 md:w-5 md:h-5 md:mb-1.5" />
-                                <div className="text-left md:text-center">
-                                    <p className="text-sm md:text-xl font-black text-white leading-none mb-0.5">{c.groupCount}</p>
-                                    <p className="text-[8px] md:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Kayıtlı Grup</p>
+                            <Tooltip
+                                position="bottom"
+                                content={
+                                    c.groups && c.groups.length > 0 ? (
+                                        <div className="flex flex-col gap-1 p-1 max-w-[260px] whitespace-normal">
+                                            <p className="text-[9px] text-white/50 font-black uppercase tracking-wider border-b border-white/10 pb-1 mb-1 text-center">Kayıtlı Gruplar</p>
+                                            {c.groups.map(g => (
+                                                <div key={g.id} className="text-white text-xs font-bold leading-tight py-0.5 text-left">• {g.name}</div>
+                                            ))}
+                                        </div>
+                                    ) : "Bu derse kayıtlı grup bulunmamaktadır."
+                                }
+                            >
+                                <div className="p-2 sm:p-4 rounded-xl md:rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 text-center flex md:flex-col items-center justify-center gap-2 md:gap-0 shrink-0 cursor-help transition-all hover:bg-white/10">
+                                    <Users className="text-white/40 w-4 h-4 md:w-5 md:h-5 md:mb-1.5" />
+                                    <div className="text-left md:text-center">
+                                        <p className="text-sm md:text-xl font-black text-white leading-none mb-0.5">{c.groupCount}</p>
+                                        <p className="text-[8px] md:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Kayıtlı Grup</p>
+                                    </div>
                                 </div>
-                            </div>
+                            </Tooltip>
                             <div className="flex-1 w-full md:w-auto">
                                 {(() => {
                                     const liveSession = c.sessions.find(s => s.status === "live");
@@ -604,10 +627,23 @@ export default function CoursesPage() {
                         {tab === "overview" && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0]/60 hover:shadow-lg transition-all group">
-                                        <Users size={14} className="text-[#A0AEC0] mb-2 group-hover:text-[#A0AEC0] transition-colors" />
-                                        <p className="text-xl font-bold text-[#0A1931] tracking-tight">{c.groupCount}</p>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#A0AEC0] mt-0.5">Kayıtlı Grup</p>
+                                    <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0]/60 hover:shadow-lg transition-all group flex flex-col justify-between">
+                                        <div>
+                                            <Users size={14} className="text-[#A0AEC0] mb-2 group-hover:text-[#A0AEC0] transition-colors" />
+                                            <p className="text-xl font-bold text-[#0A1931] tracking-tight">{c.groupCount}</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#A0AEC0] mt-0.5">Kayıtlı Grup</p>
+                                        </div>
+                                        {c.groups && c.groups.length > 0 && (
+                                            <div className="mt-4 pt-3 border-t border-[#E2E8F0]/60">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {c.groups.map(g => (
+                                                        <span key={g.id} className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#F8FAFC] text-[#1B3B6F] border border-[#E2E8F0] hover:bg-[#E2E8F0] transition-colors">
+                                                            {g.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

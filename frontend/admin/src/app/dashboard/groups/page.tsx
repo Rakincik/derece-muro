@@ -128,6 +128,7 @@ export default function GroupsPage() {
     const [memberPage, setMemberPage] = useState(1);
     const [memberPageSize, setMemberPageSize] = useState(10);
     const [memberSearch, setMemberSearch] = useState("");
+    const [coursesSearch, setCoursesSearch] = useState("");
 
     // Member management
     const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -179,6 +180,7 @@ export default function GroupsPage() {
         setSelectedMembers(new Set());
         setMemberPage(1);
         setMemberSearch("");
+        setCoursesSearch("");
         groupsApi.get(token, tenantId, selectedId)
             .then(setDetail).catch(() => setDetail(null)).finally(() => setDetailLoading(false));
     }, [selectedId, token, tenantId]);
@@ -736,48 +738,82 @@ export default function GroupsPage() {
                                 )}
 
                                 {/* ── Courses Tab ── */}
-                                {activeTab === "courses" && (
-                                    <>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <p className="text-sm font-bold text-[#1B3B6F]">{detail.courses.length} Ders</p>
-                                            <button onClick={() => { setAssignCourseSearch(""); setAssignCourseOpen(true); }}
-                                                className="px-3 py-1.5 text-xs bg-[#0A1931] text-white rounded-lg flex items-center gap-1.5 hover:bg-[#1B3B6F] font-bold">
-                                                <Plus size={12} /> Ders Ata
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {detail.courses.map(c => {
-                                                const modeLabel = c.mode === "Both" ? "Online" : c.mode;
-                                                return (
-                                                <div key={c.courseId} className="flex items-center gap-3 p-3 rounded-xl bg-[#E2E8F0]/15 hover:bg-[#E2E8F0]/30 transition-colors group">
-                                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                                                        <BookOpen size={15} className="text-emerald-600" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-[#0A1931] truncate">{c.courseTitle}</p>
-                                                        <p className="text-[10px] text-[#A0AEC0]">{modeLabel}</p>
-                                                    </div>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${modeLabel === "Online" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-amber-50 text-amber-600 border border-amber-200"}`}>
-                                                        {modeLabel}
-                                                    </span>
-                                                    <button onClick={() => handleRemoveCourse(c.courseId)}
-                                                        className="p-1.5 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                                        <Trash2 size={13} />
-                                                    </button>
+                                {activeTab === "courses" && (() => {
+                                    const filteredCourses = detail.courses.filter(c => {
+                                        if (!coursesSearch) return true;
+                                        const cleanTitle = c.courseTitle
+                                            .toLocaleLowerCase('tr')
+                                            .replace(/[^a-z0-9ığüşöç]/g, '');
+                                        const queryWords = coursesSearch
+                                            .toLocaleLowerCase('tr')
+                                            .split(/\s+/)
+                                            .map(w => w.replace(/[^a-z0-9ığüşöç]/g, ''))
+                                            .filter(Boolean);
+                                        return queryWords.every(word => cleanTitle.includes(word));
+                                    });
+
+                                    return (
+                                        <>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <p className="text-sm font-bold text-[#1B3B6F]">
+                                                    {coursesSearch ? `${filteredCourses.length} / ${detail.courses.length}` : detail.courses.length} Ders
+                                                </p>
+                                                <button onClick={() => { setAssignCourseSearch(""); setAssignCourseOpen(true); }}
+                                                    className="px-3 py-1.5 text-xs bg-[#0A1931] text-white rounded-lg flex items-center gap-1.5 hover:bg-[#1B3B6F] font-bold">
+                                                    <Plus size={12} /> Ders Ata
+                                                </button>
+                                            </div>
+
+                                            {/* Arama Girişi */}
+                                            <div className="mb-4">
+                                                <div className="relative">
+                                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Derslerde ara (büyük/küçük harf, parantez duyarsız)..."
+                                                        value={coursesSearch}
+                                                        onChange={e => setCoursesSearch(e.target.value)}
+                                                        className="w-full pl-9 pr-4 py-2 text-xs font-medium border border-[#E2E8F0] rounded-xl text-[#0A1931] bg-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#1B3B6F]/20 focus:border-[#1B3B6F] focus:bg-white transition-all outline-none"
+                                                    />
                                                 </div>
-                                                );
-                                            })}
-                                            {detail.courses.length === 0 && (
-                                                <div className="text-center py-10 text-[#A0AEC0]">
-                                                    <BookOpen size={32} className="mx-auto opacity-20 mb-2" />
-                                                    <p className="text-sm">Bu gruba atanmış ders yok</p>
-                                                    <button onClick={() => { setAssignCourseSearch(""); setAssignCourseOpen(true); }}
-                                                        className="mt-3 px-4 py-2 text-xs font-bold text-[#1B3B6F] bg-[#E2E8F0]/30 rounded-lg hover:bg-[#E2E8F0]/50">+ Ders Ata</button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {filteredCourses.map(c => {
+                                                    const modeLabel = c.mode === "Both" ? "Online" : c.mode;
+                                                    return (
+                                                    <div key={c.courseId} className="flex items-center gap-3 p-3 rounded-xl bg-[#E2E8F0]/15 hover:bg-[#E2E8F0]/30 transition-colors group">
+                                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+                                                            <BookOpen size={15} className="text-emerald-600" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-[#0A1931] truncate">{c.courseTitle}</p>
+                                                            <p className="text-[10px] text-[#A0AEC0]">{modeLabel}</p>
+                                                        </div>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${modeLabel === "Online" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-amber-50 text-amber-600 border border-amber-200"}`}>
+                                                            {modeLabel}
+                                                        </span>
+                                                        <button onClick={() => handleRemoveCourse(c.courseId)}
+                                                            className="p-1.5 text-[#A0AEC0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </div>
+                                                    );
+                                                })}
+                                                {filteredCourses.length === 0 && (
+                                                    <div className="text-center py-10 text-[#A0AEC0]">
+                                                        <BookOpen size={32} className="mx-auto opacity-20 mb-2" />
+                                                        <p className="text-sm">{coursesSearch ? "Arama kriterine uygun ders bulunamadı" : "Bu gruba atanmış ders yok"}</p>
+                                                        {!coursesSearch && (
+                                                            <button onClick={() => { setAssignCourseSearch(""); setAssignCourseOpen(true); }}
+                                                                className="mt-3 px-4 py-2 text-xs font-bold text-[#1B3B6F] bg-[#E2E8F0]/30 rounded-lg hover:bg-[#E2E8F0]/50">+ Ders Ata</button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
 
                                 {/* ── Settings Tab ── */}
                                 {activeTab === "settings" && (

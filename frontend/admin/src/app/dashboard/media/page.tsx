@@ -711,8 +711,10 @@ export default function MediaLibraryPage() {
                                                                         <Play size={12} className="text-white fill-white translate-x-0.5" />
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex flex-col min-w-0">
-                                                                    <span className="font-semibold text-gray-900 text-sm truncate" title={asset.title}>{asset.title}</span>
+                                                                <div className="flex flex-col min-w-0 flex-1">
+                                                                    <Tooltip content={asset.title} className="w-full min-w-0" position="top">
+                                                                        <span className="font-semibold text-gray-900 text-sm block truncate w-full">{asset.title}</span>
+                                                                    </Tooltip>
                                                                     {asset.tags && (
                                                                         <div className="flex flex-wrap gap-1 mt-1">
                                                                             {asset.tags.split(',').map(t => t.trim()).filter(Boolean).map((t, idx) => (
@@ -774,7 +776,9 @@ export default function MediaLibraryPage() {
                                                 </div>
                                                 <div className="p-2.5 md:p-4 flex-1 min-w-0 flex flex-col items-start gap-2 md:gap-3">
                                                     <div className="w-full min-w-0">
-                                                        <h3 className="text-xs md:text-sm font-semibold text-gray-900 truncate" title={asset.title}>{asset.title}</h3>
+                                                        <Tooltip content={asset.title} className="w-full min-w-0" position="top">
+                                                            <h3 className="text-xs md:text-sm font-semibold text-gray-900 truncate w-full">{asset.title}</h3>
+                                                        </Tooltip>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <div className={`w-1.5 h-1.5 rounded-full ${asset.status === 'Ready' ? 'bg-green-500' : 'bg-amber-500 animate-pulse'}`} />
                                                             <p className="text-[11px] text-gray-500 font-medium">

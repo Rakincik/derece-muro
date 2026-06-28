@@ -211,7 +211,7 @@ public class CourseService : ICourseService
                 try
                 {
                     var isRunning = await _bbbService.IsMeetingRunningAsync(session.BbbMeetingId!);
-                    if (!isRunning)
+                    if (!isRunning && DateTime.UtcNow - session.CreatedAt > TimeSpan.FromMinutes(10))
                     {
                         // BBB'de toplantı bitmiş, DB'yi güncelle
                         var dbSession = await _context.Sessions.FindAsync(session.Id);

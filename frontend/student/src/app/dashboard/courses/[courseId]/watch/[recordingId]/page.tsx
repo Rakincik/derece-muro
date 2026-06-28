@@ -74,6 +74,8 @@ export default function WatchPage() {
         });
     }, [watchedKey]);
 
+
+
     // ── Watch timer: 30 sn sonra izlendi olarak işaretle ──
     useEffect(() => {
         if (!currentRec) return;
@@ -124,7 +126,7 @@ export default function WatchPage() {
                     return true;
                 });
 
-                const courseRecs: RecordingDto[] = readyCourseMedias
+                const courseRecs: any[] = readyCourseMedias
                     .filter((cm: CourseMediaDto) => cm.type !== "Exam")
                     .map((cm: CourseMediaDto) => {
                         const matchRec = typedRecs.find(r => r.sessionId === cm.sessionId);
@@ -145,9 +147,24 @@ export default function WatchPage() {
                             scheduledStart: cm.sessionScheduledStart || null,
                             type: cm.type === 'Video' || cm.mediaAsset?.hlsPath ? 'Video' : 'Recording',
                             videoUrl: matchSession?.videoUrl || null,
-                            mediaAssetId: cm.mediaAssetId || matchRec?.mediaAssetId || null
+                            mediaAssetId: cm.mediaAssetId || matchRec?.mediaAssetId || null,
+                            orderIndex: cm.orderIndex
                         };
                     });
+
+                courseRecs.sort((a, b) => {
+                    if (a.orderIndex !== b.orderIndex) {
+                        return (a.orderIndex || 0) - (b.orderIndex || 0);
+                    }
+                    const dateA = a.scheduledStart || a.createdAt || "";
+                    const dateB = b.scheduledStart || b.createdAt || "";
+                    if (dateA && dateB) {
+                        return dateA.localeCompare(dateB);
+                    }
+                    if (dateA) return -1;
+                    if (dateB) return 1;
+                    return a.id.localeCompare(b.id);
+                });
 
                 setAllRecordings(courseRecs);
 
@@ -301,6 +318,7 @@ export default function WatchPage() {
                                     return (
                                         <PremiumPlayer 
                                             src={details.url} 
+                                            mediaId={currentRec?.id}
                                             poster={currentRec?.thumbnailPath ? getFileUrl(currentRec.thumbnailPath) : undefined}
                                             autoplay={true} 
                                         />
@@ -332,6 +350,7 @@ export default function WatchPage() {
                             return (
                                 <PremiumPlayer 
                                     src={src} 
+                                    mediaId={currentRec?.id}
                                     poster={currentRec?.thumbnailPath ? getFileUrl(currentRec.thumbnailPath) : undefined}
                                     autoplay={true} 
                                 />

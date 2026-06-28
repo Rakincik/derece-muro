@@ -56,6 +56,8 @@ export function useVideoPlayer(
         });
     }, [watchedKey]);
 
+
+
     // ── Fullscreen toggle ──
     const toggleFullscreen = useCallback(() => {
         if (!playerContainerRef.current) return;
