@@ -79,8 +79,8 @@ function GroupTreeItem({
             </div>
             
             <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Tooltip content={group.name}>
-                    <span className={`text-sm truncate block ${selected ? "font-bold text-blue-900" : "font-medium text-slate-700 group-hover:text-slate-900"}`}>{group.name}</span>
+                <Tooltip content={group.name} className="flex-1 min-w-0 flex items-center">
+                    <span className={`text-[13px] truncate block w-full text-left ${selected ? "font-bold text-blue-900" : "font-medium text-slate-700 group-hover:text-slate-900"}`}>{group.name}</span>
                 </Tooltip>
                 
                 {/* Minimal Stats */}
@@ -583,7 +583,7 @@ export default function GroupsPage() {
             {/* Main Content */}
             <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
                 {/* Left Panel - Group Tree */}
-                <div className="w-full lg:w-80 h-[350px] lg:h-auto flex flex-col bg-white rounded-2xl sm:rounded-[1.5rem] border border-[#E2E8F0] shadow-sm overflow-hidden shrink-0 lg:shrink-0">
+                <div className="w-full lg:w-[380px] xl:w-[420px] h-[350px] lg:h-auto flex flex-col bg-white rounded-2xl sm:rounded-[1.5rem] border border-[#E2E8F0] shadow-sm overflow-hidden shrink-0 lg:shrink-0">
                     <div className="p-3 border-b border-[#E2E8F0] shrink-0">
                         <div className="relative">
                             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
