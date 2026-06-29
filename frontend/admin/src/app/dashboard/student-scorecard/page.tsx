@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Search, User, BarChart3, Video, BookOpen, FileText,
     Clock, Activity, Download, X, TrendingUp, TrendingDown,
-    Monitor, Globe, ChevronDown, Eye, RefreshCw, Users, ArrowUpDown
+    Clock, Activity, Download, X, TrendingUp, TrendingDown,
+    Monitor, Globe, ChevronDown, ChevronUp, Eye, RefreshCw, Users, ArrowUpDown
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -303,6 +304,22 @@ function ScorecardPanel({ user, classAvg, sessions, onClose }: {
     );
 }
 
+function SortableHeader({ label, field, currentSort, sortDesc, onClick, align }: any) {
+    return (
+        <th 
+            className={`px-${align === 'left' ? '4' : '3'} py-2.5 text-[10px] font-bold uppercase cursor-pointer transition-colors select-none ${currentSort === field ? 'text-[#0A1931]' : 'text-[#A9A9A9] hover:text-[#7A8A9A]'}`}
+            onClick={onClick}
+        >
+            <div className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : ''}`}>
+                {label}
+                {currentSort === field && (
+                    sortDesc ? <ChevronDown size={12} className="text-[#0A1931]" /> : <ChevronUp size={12} className="text-[#0A1931]" />
+                )}
+            </div>
+        </th>
+    );
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function StudentScorecardPage() {
     const { token, currentTenantId: tenantId } = useAuth();
@@ -313,14 +330,24 @@ export default function StudentScorecardPage() {
     const [loadingCards, setLoadingCards] = useState(false);
     const [search, setSearch] = useState("");
     const [selected, setSelected] = useState<UserDto | null>(null);
-    const [sortBy, setSortBy] = useState<"name" | "attendance" | "video" | "exam">("name");
+    const [sortBy, setSortBy] = useState<"name" | "attendance" | "video" | "exam" | "watched" | "assignment">("name");
+    const [sortDesc, setSortDesc] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(15);
+
+    const handleSort = (field: typeof sortBy) => {
+        if (sortBy === field) {
+            setSortDesc(!sortDesc);
+        } else {
+            setSortBy(field);
+            setSortDesc(field !== "name");
+        }
+    };
 
     // Reset page on search or sort change
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, sortBy]);
+    }, [search, sortBy, sortDesc]);
 
     // Load users + sessions
     useEffect(() => {
@@ -368,21 +395,35 @@ export default function StudentScorecardPage() {
             `${u.firstName} ${u.lastName}`.toLocaleLowerCase("tr").includes(search.toLocaleLowerCase("tr")) ||
             u.email.toLocaleLowerCase("tr").includes(search.toLocaleLowerCase("tr")));
 
-        if (sortBy !== "name") {
-            list = [...list].sort((a, b) => {
-                const ca = scorecards.get(a.id);
-                const cb = scorecards.get(b.id);
-                if (!ca && !cb) return 0;
-                if (!ca) return 1;
-                if (!cb) return -1;
-                if (sortBy === "attendance") return cb.attendanceRate - ca.attendanceRate;
-                if (sortBy === "video") return cb.videoCompletionRate - ca.videoCompletionRate;
-                if (sortBy === "exam") return cb.avgExamScore - ca.avgExamScore;
+        list = [...list].sort((a, b) => {
+            const ca = scorecards.get(a.id);
+            const cb = scorecards.get(b.id);
+
+            if (sortBy === "name") {
+                const nameA = `${a.firstName} ${a.lastName}`.toLocaleLowerCase("tr");
+                const nameB = `${b.firstName} ${b.lastName}`.toLocaleLowerCase("tr");
+                if (nameA < nameB) return sortDesc ? 1 : -1;
+                if (nameA > nameB) return sortDesc ? -1 : 1;
                 return 0;
-            });
-        }
+            }
+
+            if (!ca && !cb) return 0;
+            if (!ca) return 1;
+            if (!cb) return -1;
+            
+            let valA = 0;
+            let valB = 0;
+            if (sortBy === "attendance") { valA = ca.attendanceRate; valB = cb.attendanceRate; }
+            if (sortBy === "video") { valA = ca.videoCompletionRate; valB = cb.videoCompletionRate; }
+            if (sortBy === "exam") { valA = ca.avgExamScore; valB = cb.avgExamScore; }
+            if (sortBy === "watched") { valA = ca.totalWatchedMinutes; valB = cb.totalWatchedMinutes; }
+            if (sortBy === "assignment") { valA = ca.submittedAssignments; valB = cb.submittedAssignments; }
+
+            return sortDesc ? valB - valA : valA - valB;
+        });
+
         return list;
-    }, [users, search, sortBy, scorecards]);
+    }, [users, search, sortBy, sortDesc, scorecards]);
 
     // Paginated list
     const paginated = useMemo(() => {
@@ -484,7 +525,9 @@ export default function StudentScorecardPage() {
                             { label: "İsme Göre", value: "name", icon: User },
                             { label: "Devam Oranına Göre", value: "attendance", icon: BookOpen },
                             { label: "Video Tamamlamaya Göre", value: "video", icon: Video },
-                            { label: "Sınav Ortalamasına Göre", value: "exam", icon: FileText }
+                            { label: "İzleme Süresine Göre", value: "watched", icon: Clock },
+                            { label: "Sınav Ortalamasına Göre", value: "exam", icon: FileText },
+                            { label: "Ödev Sayısına Göre", value: "assignment", icon: FileText }
                         ]}
                         className="flex-1 sm:flex-none"
                     />
@@ -502,12 +545,12 @@ export default function StudentScorecardPage() {
                     <table className="w-full">
                         <thead className="bg-[#E2E8F0]/15 border-b border-[#E2E8F0]">
                             <tr>
-                                <th className="text-left px-4 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">Öğrenci</th>
-                                <th className="text-center px-3 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">Devam</th>
-                                <th className="text-center px-3 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">Video</th>
-                                <th className="text-center px-3 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">İzleme</th>
-                                <th className="text-center px-3 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">Sınav</th>
-                                <th className="text-center px-3 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">Ödev</th>
+                                <SortableHeader label="Öğrenci" field="name" currentSort={sortBy} sortDesc={sortDesc} onClick={() => handleSort("name")} align="left" />
+                                <SortableHeader label="Devam" field="attendance" currentSort={sortBy} sortDesc={sortDesc} onClick={() => handleSort("attendance")} align="center" />
+                                <SortableHeader label="Video" field="video" currentSort={sortBy} sortDesc={sortDesc} onClick={() => handleSort("video")} align="center" />
+                                <SortableHeader label="İzleme" field="watched" currentSort={sortBy} sortDesc={sortDesc} onClick={() => handleSort("watched")} align="center" />
+                                <SortableHeader label="Sınav" field="exam" currentSort={sortBy} sortDesc={sortDesc} onClick={() => handleSort("exam")} align="center" />
+                                <SortableHeader label="Ödev" field="assignment" currentSort={sortBy} sortDesc={sortDesc} onClick={() => handleSort("assignment")} align="center" />
                                 <th className="text-center px-3 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase">Durum</th>
                                 <th className="text-right px-4 py-2.5 text-[10px] font-bold text-[#A9A9A9] uppercase"></th>
                             </tr>

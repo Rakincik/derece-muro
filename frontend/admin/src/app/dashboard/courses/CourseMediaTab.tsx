@@ -287,11 +287,10 @@ export function CourseMediaTab({
                 titleB = b.examTitle || "";
             }
 
-            // 1. Eğer SADECE Admin panelinde Reorder (Sürükle bırak) modundaysak, her şeyi ez ve orderIndex'e göre diz
-            if (isReorderEnabled) {
-                if (a.orderIndex !== b.orderIndex) {
-                    return (a.orderIndex || 0) - (b.orderIndex || 0);
-                }
+            // 1. Her zaman ilk öncelik: Eğer manuel bir sıralama (orderIndex) yapılmışsa onu kullan
+            // İster 50'li göster, ister Tümü olsun, adminin yaptığı sıralama ezilmemeli.
+            if (a.orderIndex !== b.orderIndex) {
+                return (a.orderIndex || 0) - (b.orderIndex || 0);
             }
 
             // 2. Sıralama önceliği: Title'dan çıkarılan tarihe göre (varsa)
@@ -673,7 +672,30 @@ export function CourseMediaTab({
                                             )}
                                         </div>
                                         <p className="text-[10px] sm:text-xs font-medium text-[#A0AEC0] flex items-center gap-1 sm:gap-2">
-                                            {media.type === "Exam" ? "Öğrenci Sınavı" : media.type === "Session" ? "Canlı Ders Oturumu" : (
+                                            {media.type === "Exam" ? "Öğrenci Sınavı" : media.type === "Session" ? (
+                                                <>
+                                                    Canlı Ders Oturumu
+                                                    {(() => {
+                                                        const sess = sessions.find(s => s.id === media.sessionId);
+                                                        if (sess?.scheduledStart) {
+                                                            return (
+                                                                <>
+                                                                    <span className="w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-[#E2E8F0]" />
+                                                                    <span>{new Date(sess.scheduledStart).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                                                </>
+                                                            );
+                                                        } else if (sess?.createdAt) {
+                                                            return (
+                                                                <>
+                                                                    <span className="w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-[#E2E8F0]" />
+                                                                    <span>Oluşturulma: {new Date(sess.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                                                </>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </>
+                                            ) : (
                                                 <>
                                                     {media.mediaAsset?.durationSeconds ? `${Math.floor(media.mediaAsset.durationSeconds / 60)} dk` : 'Süre bilinmiyor'} 
                                                     <span className="w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-[#E2E8F0]" /> 

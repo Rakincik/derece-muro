@@ -116,7 +116,7 @@ public class AuditService : IAuditService
     public async Task<PagedResult<UserAuditSummaryDto>> GetUserAuditSummariesAsync(int page, int pageSize, string? search = null)
     {
         var q = _context.AuditLogs.AsNoTracking()
-            .Where(a => true); // Sadece tenantId filtrele, null olanları da getir.
+            .Where(a => true);
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -124,10 +124,9 @@ public class AuditService : IAuditService
             q = q.Where(a => a.UserName != null && a.UserName.ToLower().Contains(searchLower));
         }
 
-        var grouped = q.GroupBy(a => new { a.UserId, a.UserName })
+        var grouped = q.GroupBy(a => a.UserId)
             .Select(g => new {
-                g.Key.UserId,
-                g.Key.UserName,
+                UserId = g.Key,
                 ActionCount = g.Count(),
                 LastActionAt = g.Max(a => a.CreatedAt)
             });
@@ -139,9 +138,39 @@ public class AuditService : IAuditService
             .Take(pageSize)
             .ToListAsync();
 
-        var result = items.Select(x => new UserAuditSummaryDto(
-            x.UserId, x.UserName, x.ActionCount, x.LastActionAt
-        )).ToList();
+        var userIds = items.Where(x => x.UserId.HasValue).Select(x => x.UserId.Value).ToList();
+        var users = await _context.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
+
+        var lastActions = await _context.AuditLogs.AsNoTracking()
+            .Where(a => userIds.Contains(a.UserId ?? Guid.Empty))
+            .GroupBy(a => a.UserId)
+            .Select(g => new {
+                UserId = g.Key,
+                LastAction = g.OrderByDescending(a => a.CreatedAt).Select(a => a.Action).FirstOrDefault()
+            }).ToDictionaryAsync(x => x.UserId, x => x.LastAction);
+
+        var result = items.Select(x => {
+            string userName = "Sistem / Anonim";
+            string? email = null;
+            string? avatar = null;
+            string? lastAction = null;
+
+            if (x.UserId.HasValue) {
+                if (users.TryGetValue(x.UserId.Value, out var u)) {
+                    userName = $"{u.FirstName} {u.LastName}".Trim();
+                    if (string.IsNullOrEmpty(userName)) userName = u.Email ?? "Bilinmeyen Kullanıcı";
+                    email = u.Email;
+                    avatar = null; // Removed ProfileImageUrl as it does not exist on User entity
+                }
+                if (lastActions.TryGetValue(x.UserId, out var act)) {
+                    lastAction = act;
+                }
+            }
+
+            return new UserAuditSummaryDto(
+                x.UserId, userName, email, avatar, x.ActionCount, x.LastActionAt, lastAction
+            );
+        }).ToList();
 
         return new PagedResult<UserAuditSummaryDto>(result, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
     }

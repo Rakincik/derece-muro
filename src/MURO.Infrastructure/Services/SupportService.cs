@@ -34,11 +34,12 @@ public class SupportService : ISupportService
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            var items = await query.OrderByDescending(t => t.CreatedAt)
+            var items = await query.OrderByDescending(t => t.Messages.Any() ? t.Messages.Max(m => m.CreatedAt) : t.CreatedAt)
                 .Skip((page - 1) * pageSize).Take(pageSize)
                 .Include(t => t.User).Include(t => t.Messages)
                 .Select(t => new TicketListDto(t.Id, t.Subject, t.Status.ToString(), t.Priority,
-                    t.Category, t.User.FirstName + " " + t.User.LastName, t.Messages.Count, t.CreatedAt))
+                    t.Category, t.User.FirstName + " " + t.User.LastName, t.Messages.Count, 
+                    t.Messages.Any() ? t.Messages.Max(m => m.CreatedAt) : t.CreatedAt))
                 .ToListAsync();
 
             return new PagedResult<TicketListDto>(items, totalCount, page, pageSize, totalPages);

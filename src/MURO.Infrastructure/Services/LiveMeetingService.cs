@@ -5,6 +5,7 @@ using MURO.Application.Interfaces;
 using MURO.Domain.Entities;
 using MURO.Domain.Enums;
 using MURO.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MURO.Infrastructure.Services;
 
@@ -16,6 +17,7 @@ public class LiveMeetingService : ILiveMeetingService
     private readonly IGroupAccessService _groupAccess;
     private readonly IConfiguration _config;
     private readonly ICacheService _cache;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public LiveMeetingService(
         MuroDbContext context,
@@ -23,7 +25,8 @@ public class LiveMeetingService : ILiveMeetingService
         INotificationService notificationService,
         IGroupAccessService groupAccess,
         IConfiguration config,
-        ICacheService cache)
+        ICacheService cache,
+        IServiceScopeFactory scopeFactory)
     {
         _context = context;
         _bbbService = bbbService;
@@ -31,6 +34,7 @@ public class LiveMeetingService : ILiveMeetingService
         _groupAccess = groupAccess;
         _config = config;
         _cache = cache;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<SessionStartResult> StartSessionAsync(Guid courseId, Guid sessionId, Guid moderatorUserId)
@@ -228,9 +232,23 @@ public class LiveMeetingService : ILiveMeetingService
             LogoutUrl: logoutUrl
         ));
 
-        // Performans Optimizasyonu: Yoklama kayıtları artık Join butonunda değil, 
-        // BbbWebhookController (user-joined event) üzerinden asenkron olarak alınmaktadır.
-        // Bu sayede peak anlarda veritabanı kilitlenmesi (lock contention) önlenir.
+        // Yoklama kaydı fallback: Webhook bazen çalışmıyor/gecikiyor (özellikle test ortamlarında).
+        // Bu sebeple asenkron background task olarak yoklama kaydını Join anında da tetikliyoruz.
+        // IServiceScopeFactory kullanılarak DbContext disposed hatasının önüne geçilmiştir.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var attendanceSvc = scope.ServiceProvider.GetRequiredService<ISessionAttendanceService>();
+                await attendanceSvc.RecordJoinAsync(session.Id, userId);
+            }
+            catch (Exception ex)
+            {
+                // Background task içinde hatayı yut (Loglanabilir)
+                Console.WriteLine($"Attendance fallback failed: {ex.Message}");
+            }
+        });
 
         return new SessionJoinResult(session.Id, joinUrl, isModerator2);
     }

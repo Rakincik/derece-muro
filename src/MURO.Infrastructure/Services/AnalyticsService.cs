@@ -13,12 +13,18 @@ public class AnalyticsService : IAnalyticsService
     private readonly MuroDbContext _context;
     private readonly ICacheService _cache;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IGroupAccessService _groupAccessService;
 
-    public AnalyticsService(MuroDbContext context, ICacheService cache, IConnectionMultiplexer redis)
+    public AnalyticsService(
+        MuroDbContext context, 
+        ICacheService cache, 
+        IConnectionMultiplexer redis,
+        IGroupAccessService groupAccessService)
     {
         _context = context;
         _cache = cache;
         _redis = redis;
+        _groupAccessService = groupAccessService;
     }
 
     // ── Admin: Genel dashboard istatistikleri ───────────────────────────────
@@ -235,39 +241,41 @@ public class AnalyticsService : IAnalyticsService
                 .FirstOrDefaultAsync(u => u.Id == studentId)
                 ?? throw new KeyNotFoundException("Öğrenci bulunamadı.");
 
-            var attendance = await _context.SessionAttendances.AsNoTracking()
-                .Where(sa => sa.UserId == studentId && !sa.Session.IsDeleted && sa.Session.ScheduledStart.HasValue && sa.Session.Description != "Video (VOD)" && sa.Session.Status != SessionStatus.Cancelled)
-                .ToListAsync();
+            var accessibleCourseIds = await _groupAccessService.GetAccessibleCourseIdsAsync(studentId);
+
+            var totalSessions = await _context.Sessions.AsNoTracking()
+                .CountAsync(s => accessibleCourseIds.Contains(s.CourseId) && !s.IsDeleted && s.ScheduledStart.HasValue && s.ScheduledStart < DateTime.UtcNow && s.Description != "Video (VOD)" && s.Status != SessionStatus.Cancelled);
+
+            var attendedCount = await _context.SessionAttendances.AsNoTracking()
+                .CountAsync(sa => sa.UserId == studentId && !sa.Session.IsDeleted && sa.Session.ScheduledStart.HasValue && sa.Session.Description != "Video (VOD)" && sa.Session.Status != SessionStatus.Cancelled);
 
             var videoProgress = await _context.VideoProgresses.AsNoTracking()
-                .Where(vp => vp.UserId == studentId )
-                .Include(vp => vp.MediaAsset)
+                .Where(vp => vp.UserId == studentId)
                 .ToListAsync();
 
-            var totalVideos = await _context.MediaAssets
-                .CountAsync(m => true);
+            var totalVideos = await _context.MediaAssets.AsNoTracking()
+                .CountAsync(m => (m.CourseId != null && accessibleCourseIds.Contains(m.CourseId.Value)) || m.CourseMedias.Any(cm => accessibleCourseIds.Contains(cm.CourseId)));
 
-            var submittedAssignments = await _context.AssignmentSubmissions
+            var submittedAssignments = await _context.AssignmentSubmissions.AsNoTracking()
                 .CountAsync(s => s.UserId == studentId);
 
             var examScores = await _context.ExamResults.AsNoTracking()
-                .Where(r => r.UserId == studentId )
+                .Where(r => r.UserId == studentId)
                 .Select(r => r.Score)
                 .ToListAsync();
 
-            var attendedCount = attendance.Count;
             var completedVideos = videoProgress.Count(vp => vp.CompletedAt != null);
             var totalWatchedMinutes = videoProgress.Sum(vp => vp.WatchedSeconds) / 60;
             var avgScore = examScores.Any() ? Math.Round(examScores.Average(), 1) : 0;
 
             var videoCompletionRate = totalVideos > 0
                 ? Math.Round((double)completedVideos / totalVideos * 100, 1) : 0;
-            var attendanceRate = attendance.Count() > 0
-                ? Math.Round((double)attendedCount / attendance.Count * 100, 1) : 0;
+            var attendanceRate = totalSessions > 0
+                ? Math.Round((double)attendedCount / totalSessions * 100, 1) : 0;
 
             return new StudentScorecardDto(
                 user.Id, $"{user.FirstName} {user.LastName}", user.Email,
-                attendedCount, attendance.Count, attendanceRate,
+                attendedCount, totalSessions, attendanceRate,
                 completedVideos, totalVideos, videoCompletionRate,
                 totalWatchedMinutes, submittedAssignments, avgScore);
         }, TimeSpan.FromMinutes(2));
@@ -319,49 +327,27 @@ public class AnalyticsService : IAnalyticsService
                 return new ScorecardSummaryDto(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
             var n = studentIds.Count;
-
-            // Aggregate attendance
-            var allAttendance = await _context.SessionAttendances.AsNoTracking()
-                .Where(sa => studentIds.Contains(sa.UserId) )
-                .ToListAsync();
-            var totalAttended = allAttendance.Count;
-            var totalAttendanceRecords = allAttendance.Count;
-            var avgAttendanceRate = totalAttendanceRecords > 0
-                ? Math.Round((double)totalAttended / totalAttendanceRecords * 100, 1) : 0;
-
-            // Aggregate video completion
-            var totalVideos = await _context.MediaAssets.CountAsync(m => true);
-            var totalCompletedVideos = await _context.VideoProgresses
-                .CountAsync(vp => studentIds.Contains(vp.UserId) && vp.CompletedAt != null);
-            var avgVideoCompletionRate = totalVideos > 0 && n > 0
-                ? Math.Round((double)totalCompletedVideos / (totalVideos * n) * 100, 1) : 0;
-
-            var totalWatchedMinutes = await _context.VideoProgresses
-                .Where(vp => studentIds.Contains(vp.UserId) )
-                .SumAsync(vp => (long)vp.WatchedSeconds) / 60;
-
-            // Aggregate exam scores
-            var examScores = await _context.ExamResults.AsNoTracking()
-                .Where(r => studentIds.Contains(r.UserId) )
-                .Select(r => r.Score)
-                .ToListAsync();
-            var avgExamScore = examScores.Any() ? Math.Round(examScores.Average(), 1) : 0;
-
-            // Aggregate assignments
-            var totalSubmittedAssignments = await _context.AssignmentSubmissions
-                .CountAsync(s => studentIds.Contains(s.UserId));
+            var scorecards = new List<StudentScorecardDto>();
+            
+            // To prevent exhausting the DB connection pool, fetch individual scorecards in chunks.
+            // Since GetStudentScorecardAsync is heavily cached, subsequent runs will be very fast.
+            foreach (var chunk in studentIds.Chunk(30))
+            {
+                var chunkTasks = chunk.Select(sid => GetStudentScorecardAsync(sid));
+                scorecards.AddRange(await Task.WhenAll(chunkTasks));
+            }
 
             return new ScorecardSummaryDto(
                 n,
-                avgAttendanceRate,
-                avgVideoCompletionRate,
-                avgExamScore,
-                (int)Math.Round((double)totalAttended / n),
-                totalAttendanceRecords > 0 ? (int)Math.Round((double)totalAttendanceRecords / n) : 0,
-                (int)Math.Round((double)totalCompletedVideos / n),
-                totalVideos,
-                (int)(totalWatchedMinutes / n),
-                (int)Math.Round((double)totalSubmittedAssignments / n)
+                Math.Round(scorecards.Average(s => s.AttendanceRate), 1),
+                Math.Round(scorecards.Average(s => s.VideoCompletionRate), 1),
+                Math.Round(scorecards.Average(s => s.AvgExamScore), 1),
+                (int)Math.Round(scorecards.Average(s => s.AttendedSessions)),
+                (int)Math.Round(scorecards.Average(s => s.TotalSessions)),
+                (int)Math.Round(scorecards.Average(s => s.CompletedVideos)),
+                (int)Math.Round(scorecards.Average(s => s.TotalVideos)),
+                (int)Math.Round(scorecards.Average(s => s.TotalWatchedMinutes)),
+                (int)Math.Round(scorecards.Average(s => s.SubmittedAssignments))
             );
         }, TimeSpan.FromMinutes(3));
     }

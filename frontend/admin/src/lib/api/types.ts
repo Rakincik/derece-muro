@@ -663,3 +663,21 @@ export interface CourseStudentListDto {
     assignedAt: string;
     expiresAt?: string | null;
 }
+
+export interface UserAuditSummaryDto {
+    userId?: string;
+    userName?: string;
+    email?: string;
+    avatarUrl?: string;
+    actionCount: number;
+    lastActionAt: string;
+    lastAction?: string;
+}
+
+export interface SuspiciousUserDto {
+    userId?: string;
+    userName?: string;
+    alertType: string;
+    eventCount: number;
+    lastEventAt: string;
+}

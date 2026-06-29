@@ -101,7 +101,7 @@ export default function SupportPage() {
             (statusFilter === "InProgress" && (t.status === "Answered" || t.status === "Yanıtlandı" || t.status === "InProgress")) ||
             (statusFilter === "Closed" && (t.status === "Closed" || t.status === "Çözüldü" || t.status === "Resolved"));
         return matchSearch && matchStatus;
-    });
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const open = tickets.filter(t => t.status === "Açık" || t.status === "Open").length;
     const answered = tickets.filter(t => t.status === "Yanıtlandı" || t.status === "Answered" || t.status === "InProgress").length;
@@ -116,6 +116,7 @@ export default function SupportPage() {
                 ...selected,
                 messages: [...(selected.messages ?? []), reply],
                 status: "Yanıtlandı",
+                createdAt: reply.createdAt, // Update the sorting date locally to pop it to the top
             };
             setSelected(updatedTicket);
             setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
@@ -185,9 +186,9 @@ export default function SupportPage() {
                     { label: "Yanıtlandı", value: answered, color: "text-blue-600", bg: "bg-blue-50" },
                     { label: "Çözüldü", value: closed, color: "text-emerald-600", bg: "bg-emerald-50" },
                 ].map(s => (
-                    <div key={s.label} className={`min-w-[140px] lg:min-w-0 shrink-0 snap-start ${s.bg} rounded-xl p-4 text-center`}>
-                        <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                        <p className="text-xs text-[#A9A9A9] mt-0.5">{s.label}</p>
+                    <div key={s.label} className={`min-w-[120px] lg:min-w-0 shrink-0 snap-start ${s.bg} rounded-xl p-2.5 flex items-center justify-center gap-2 border border-white/50 shadow-sm`}>
+                        <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                        <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">{s.label}</p>
                     </div>
                 ))}
             </div>

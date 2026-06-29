@@ -79,7 +79,7 @@ function GroupTreeItem({
             </div>
             
             <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Tooltip content={group.name} className="flex-1 min-w-0 flex items-center">
+                <Tooltip content={group.name} position="bottom" className="flex-1 min-w-0 flex items-center">
                     <span className={`text-[13px] truncate block w-full text-left ${selected ? "font-bold text-blue-900" : "font-medium text-slate-700 group-hover:text-slate-900"}`}>{group.name}</span>
                 </Tooltip>
                 
@@ -90,18 +90,18 @@ function GroupTreeItem({
                 </div>
             </div>
             
-            {isEmpty && <Tooltip content="Boş grup"><span className={`shrink-0 ml-1 text-amber-400 ${selected ? "opacity-100" : "opacity-80"}`}><AlertTriangle size={12} /></span></Tooltip>}
+            {isEmpty && <Tooltip content="Boş grup" position="bottom"><span className={`shrink-0 ml-1 text-amber-400 ${selected ? "opacity-100" : "opacity-80"}`}><AlertTriangle size={12} /></span></Tooltip>}
             
             <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 shrink-0 ml-2 transition-opacity">
-                <Tooltip content="Alt Grup Ekle"><button onClick={e => { e.stopPropagation(); onAddSubgroup(); }}
+                <Tooltip content="Alt Grup Ekle" position="bottom"><button onClick={e => { e.stopPropagation(); onAddSubgroup(); }}
                     className="p-1 rounded text-slate-400 hover:text-emerald-600 hover:bg-emerald-50">
                     <Plus size={14} />
                 </button></Tooltip>
-                <Tooltip content="Düzenle"><button onClick={e => { e.stopPropagation(); onEdit(); }}
+                <Tooltip content="Düzenle" position="bottom"><button onClick={e => { e.stopPropagation(); onEdit(); }}
                     className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50">
                     <Edit3 size={14} />
                 </button></Tooltip>
-                <Tooltip content="Sil"><button onClick={e => { e.stopPropagation(); onDelete(); }}
+                <Tooltip content="Sil" position="bottom"><button onClick={e => { e.stopPropagation(); onDelete(); }}
                     className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50">
                     <Trash2 size={14} />
                 </button></Tooltip>
@@ -583,7 +583,7 @@ export default function GroupsPage() {
             {/* Main Content */}
             <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
                 {/* Left Panel - Group Tree */}
-                <div className="w-full lg:w-[380px] xl:w-[420px] h-[350px] lg:h-auto flex flex-col bg-white rounded-2xl sm:rounded-[1.5rem] border border-[#E2E8F0] shadow-sm overflow-hidden shrink-0 lg:shrink-0">
+                <div className="w-full lg:w-[280px] xl:w-[320px] 2xl:w-[380px] h-[350px] lg:h-auto flex flex-col bg-white rounded-2xl sm:rounded-[1.5rem] border border-[#E2E8F0] shadow-sm overflow-hidden shrink-0 lg:shrink-0">
                     <div className="p-3 border-b border-[#E2E8F0] shrink-0">
                         <div className="relative">
                             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
@@ -621,23 +621,23 @@ export default function GroupsPage() {
                         <>
                             {/* Detail Header - Ultra Compact */}
                             <div className="p-3 px-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-                                    <div className="flex items-center flex-wrap gap-2.5 flex-1 min-w-0 pr-4">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-[#E2E8F0] bg-white relative overflow-hidden shrink-0">
-                                            <div className="absolute inset-0 opacity-10" style={{ background: detail.color ?? "#6366f1" }} />
-                                            <FolderTree size={14} style={{ color: detail.color ?? "#6366f1" }} />
-                                        </div>
-                                        <h2 className="text-lg font-black text-[#0A1931] tracking-tight">{detail.name}</h2>
-                                        
-                                        <div className="flex items-center gap-1.5 ml-1">
-                                            <Tooltip content="Grubu Kopyala"><button onClick={() => { setCloneGroupName(`${detail.name} (Kopya)`); setCloneGroupMembers(true); setCloneGroupCourses(true); setCloneGroupOpen(true); }}
-                                                className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Copy size={12} /> Kopyala</button></Tooltip>
-                                            <button onClick={() => openEdit(detail as unknown as GroupListDto)}
-                                                className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Edit3 size={12} /> Düzenle</button>
+                                <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3">
+                                    <div className="flex flex-col gap-2 flex-1 min-w-0 pr-4">
+                                        <div className="flex items-center flex-wrap gap-2.5">
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-[#E2E8F0] bg-white relative overflow-hidden shrink-0">
+                                                <div className="absolute inset-0 opacity-10" style={{ background: detail.color ?? "#6366f1" }} />
+                                                <FolderTree size={14} style={{ color: detail.color ?? "#6366f1" }} />
+                                            </div>
+                                            <h2 className="text-lg font-black text-[#0A1931] tracking-tight">{detail.name}</h2>
+                                            
+                                            <div className="flex items-center gap-1.5 ml-1">
+                                                <Tooltip content="Grubu Kopyala"><button onClick={() => { setCloneGroupName(`${detail.name} (Kopya)`); setCloneGroupMembers(true); setCloneGroupCourses(true); setCloneGroupOpen(true); }}
+                                                    className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Copy size={12} /> Kopyala</button></Tooltip>
+                                                <button onClick={() => openEdit(detail as unknown as GroupListDto)}
+                                                    className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Edit3 size={12} /> Düzenle</button>
+                                            </div>
                                         </div>
 
-                                        <div className="hidden sm:block w-px h-4 bg-[#E2E8F0] mx-1" />
-                                        
                                         <div className="flex items-center flex-wrap gap-1.5">
                                             <span className="whitespace-nowrap px-2 py-0.5 bg-white border border-[#E2E8F0] text-[#475569] text-[10px] rounded-md font-bold shadow-sm flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: detail.color ?? "#6366f1" }} />{detail.memberCount} öğrenci</span>
                                             <span className="whitespace-nowrap px-2 py-0.5 bg-white border border-[#E2E8F0] text-[#475569] text-[10px] rounded-md font-bold shadow-sm">{detail.courseCount} ders</span>
@@ -645,7 +645,7 @@ export default function GroupsPage() {
                                             {detail.parentGroupName && <span className="whitespace-nowrap px-2 py-0.5 bg-[#F8FAFC] text-[#64748B] text-[10px] rounded-md border border-[#E2E8F0] font-bold shadow-sm">↑ {detail.parentGroupName}</span>}
                                         </div>
                                     </div>
-                                    <div className="w-full xl:w-auto overflow-x-auto hide-scrollbar shrink-0">
+                                    <div className="w-full 2xl:w-auto overflow-x-auto hide-scrollbar shrink-0">
                                         <PremiumTabs 
                                             tabs={[
                                                 { id: "members", label: "Öğrenciler", icon: <Users size={12} /> },

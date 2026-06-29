@@ -320,7 +320,8 @@ export default function AuditTrailPage() {
     const [loading, setLoading] = useState(true);
 
     // Detail Modal States
-    const [selectedUser, setSelectedUser] = useState<{ id: string | null; name: string | null } | null>(null);
+    const [selectedUser, setSelectedUser] = useState<{ id: string | null; name: string | null; avatarUrl?: string | null; email?: string | null } | null>(null);
+    const [logFilter, setLogFilter] = useState<"all" | "education" | "security" | "system">("all");
     const [userLogs, setUserLogs] = useState<any[]>([]); // Merged Audit + Security
     const [loadingLogs, setLoadingLogs] = useState(false);
 
@@ -368,7 +369,43 @@ export default function AuditTrailPage() {
                 ];
                 merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 
-                setUserLogs(merged);
+                // Group consecutive video progress logs
+                const grouped = [];
+                for (let i = 0; i < merged.length; i++) {
+                    const current = merged[i];
+                    if (current._type === 'system' && current.action === "Update" && current.entityType === "VideoProgress") {
+                        let sessionEndTime = new Date(current.createdAt).getTime();
+                        let j = i;
+                        while (
+                            j + 1 < merged.length && 
+                            merged[j+1]._type === 'system' &&
+                            merged[j+1].action === "Update" && 
+                            merged[j+1].entityType === "VideoProgress" &&
+                            merged[j+1].entityId === current.entityId &&
+                            (new Date(merged[j].createdAt).getTime() - new Date(merged[j+1].createdAt).getTime() < 30 * 60 * 1000)
+                        ) {
+                            j++;
+                        }
+                        if (j > i) {
+                            const oldest = merged[j];
+                            grouped.push({
+                                ...current,
+                                isGrouped: true,
+                                groupedCount: j - i + 1,
+                                sessionStartTime: oldest.createdAt,
+                                sessionEndTime: current.createdAt,
+                                action: "WatchSession" // Custom action
+                            });
+                            i = j;
+                        } else {
+                            grouped.push(current);
+                        }
+                    } else {
+                        grouped.push(current);
+                    }
+                }
+
+                setUserLogs(grouped);
             } catch (e) {
                 console.error("Failed to load user logs", e);
             } finally {
@@ -421,9 +458,10 @@ export default function AuditTrailPage() {
                         <table className="w-full min-w-[550px]">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-[#E2E8F0]">
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Hareket</th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Toplam İşlem</th>
                                     <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Kullanıcı</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Son İşlem Tarihi</th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Son İşlem</th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Durum</th>
                                     <th className="text-right px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">İşlemler</th>
                                 </tr>
                             </thead>
@@ -440,29 +478,55 @@ export default function AuditTrailPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    users.map((u, i) => (
+                                    users.map((u, i) => {
+                                        const isSuspicious = suspicious.some(s => s.userId === u.userId);
+                                        return (
                                         <tr key={u.userId || i} className="border-b border-[#E2E8F0]/40 hover:bg-slate-50 transition-colors">
                                             <td className="px-5 py-3">
-                                                <span className="inline-flex items-center justify-center min-w-[32px] h-6 px-2 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100">
+                                                <span className="inline-flex items-center justify-center min-w-[32px] h-6 px-2 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100 shadow-sm">
                                                     {u.actionCount}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-3 text-sm font-bold text-[#0A1931] whitespace-nowrap">
-                                                {u.userName || "Sistem / Anonim"}
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    {u.userId ? (
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1B3B6F] to-[#0A1931] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                                            {u.avatarUrl ? <img src={u.avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover" /> : u.userName?.[0]?.toUpperCase() || "U"}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-[10px] font-bold flex-shrink-0">
+                                                            <Globe size={14} />
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="text-sm font-bold text-[#0A1931]">{u.userName || "Sistem / Anonim"}</p>
+                                                        {u.email && <p className="text-[10px] text-[#A0AEC0]">{u.email}</p>}
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="px-5 py-3 text-xs text-[#A9A9A9] whitespace-nowrap">
-                                                {new Date(u.lastActionAt).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                            <td className="px-5 py-3 whitespace-nowrap">
+                                                {u.lastAction && <p className="text-xs font-bold text-slate-700">{formatActionLabel(u.lastAction)}</p>}
+                                                <p className="text-[10px] text-[#A9A9A9]">
+                                                    {new Date(u.lastActionAt).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                                </p>
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                {isSuspicious && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100">
+                                                        <AlertTriangle size={10} /> Riskli Davranış
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-5 py-3 text-right">
                                                 <button 
-                                                    onClick={() => setSelectedUser({ id: u.userId, name: u.userName })}
+                                                    onClick={() => setSelectedUser({ id: u.userId || null, name: u.userName || null, avatarUrl: u.avatarUrl, email: u.email })}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A1931] text-white text-xs font-bold rounded-lg hover:bg-[#1B3B6F] transition-colors"
                                                 >
                                                     <Eye size={12} /> İncele
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))
+                                    )})
                                 )}
                             </tbody>
                         </table>
@@ -563,17 +627,40 @@ export default function AuditTrailPage() {
                     <div className="absolute inset-0 bg-[#0A1931]/40 backdrop-blur-sm" />
                     <div className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         
-                        <div className="px-6 py-4 border-b border-[#E2E8F0] flex items-center justify-between shrink-0">
+                        <div className="px-6 py-4 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-[#1B3B6F]/10 flex items-center justify-center text-[#1B3B6F]">
-                                    <User size={18} />
-                                </div>
+                                {selectedUser.avatarUrl ? (
+                                    <div className="w-10 h-10 rounded-full shrink-0">
+                                        <img src={selectedUser.avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover shadow-sm border border-[#E2E8F0]" />
+                                    </div>
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-[#1B3B6F]/10 flex items-center justify-center text-[#1B3B6F] shrink-0 border border-[#1B3B6F]/20">
+                                        <User size={18} />
+                                    </div>
+                                )}
                                 <div>
                                     <h2 className="text-lg font-bold text-[#0A1931]">{selectedUser.name || "Bilinmeyen Kullanıcı"}</h2>
-                                    <p className="text-xs font-bold text-[#A0AEC0] uppercase tracking-widest">Aksiyon Geçmişi</p>
+                                    {selectedUser.email ? <p className="text-xs text-[#A0AEC0]">{selectedUser.email}</p> : <p className="text-[10px] font-bold text-[#A0AEC0] uppercase tracking-widest">Aksiyon Geçmişi</p>}
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedUser(null)} className="p-2 rounded-xl bg-[#E2E8F0]/30 hover:bg-[#E2E8F0] text-[#A0AEC0] hover:text-[#0A1931] transition-colors"><X size={18} /></button>
+                            
+                            <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl">
+                                {[
+                                    { id: "all", label: "Tümü" },
+                                    { id: "education", label: "Eğitim" },
+                                    { id: "security", label: "Güvenlik" },
+                                    { id: "system", label: "Sistem" }
+                                ].map(f => (
+                                    <button 
+                                        key={f.id}
+                                        onClick={() => setLogFilter(f.id as any)}
+                                        className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all ${logFilter === f.id ? "bg-white text-[#0A1931] shadow-sm" : "text-[#A0AEC0] hover:text-[#7A8A9A]"}`}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
+                                <button onClick={() => setSelectedUser(null)} className="ml-2 p-1.5 rounded-lg text-[#A0AEC0] hover:text-[#0A1931] transition-colors"><X size={16} /></button>
+                            </div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
@@ -594,7 +681,22 @@ export default function AuditTrailPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[60px] before:-translate-x-px md:before:ml-[88px] before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#E2E8F0] before:via-[#E2E8F0] before:to-transparent">
-                                    {userLogs.map((log, i) => {
+                                    {(() => {
+                                        const educationActions = ["Submit", "Ask", "StartLive", "WatchSession"];
+                                        const educationEntities = ["Course", "Lesson", "Assignment", "Exam", "VideoProgress"];
+                                        const filteredLogs = userLogs.filter(log => {
+                                            if (logFilter === "all") return true;
+                                            if (logFilter === "security") return log._type === "security" || ["Login", "Logout"].includes(log.action);
+                                            if (logFilter === "education") return educationActions.includes(log.action) || educationEntities.includes(log.entityType);
+                                            if (logFilter === "system") return !educationActions.includes(log.action) && !educationEntities.includes(log.entityType) && log._type !== "security";
+                                            return true;
+                                        });
+
+                                        if (filteredLogs.length === 0) {
+                                            return <div className="text-center py-10 text-[#A0AEC0] text-sm">Bu filtreye uygun kayıt bulunamadı.</div>;
+                                        }
+
+                                        return filteredLogs.map((log, i) => {
                                         const isSystem = log._type === 'system';
                                         
                                         // Format Date & Time
@@ -635,6 +737,25 @@ export default function AuditTrailPage() {
                                                             // SYSTEM AUDIT LOG UI
                                                             <div>
                                                                 {(() => {
+                                                                    if (log.action === "WatchSession") {
+                                                                        return (
+                                                                            <>
+                                                                                <div className="flex items-center gap-2 mb-2.5">
+                                                                                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 shadow-sm`}>
+                                                                                        <Monitor size={12} />
+                                                                                        Video İzleme Oturumu
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="text-sm font-bold text-[#0A1931] mb-1.5">🎬 {log.entityName || "Video"} izlendi</p>
+                                                                                <p className="text-xs text-[#A0AEC0] mt-1.5">
+                                                                                    Yaklaşık {Math.round((new Date(log.sessionEndTime).getTime() - new Date(log.sessionStartTime).getTime()) / 60000)} dk kesintisiz izleme ({log.groupedCount} hareket)
+                                                                                </p>
+                                                                                <div className="mt-3">
+                                                                                    {log.details && <RenderLogDetails details={log.details} />}
+                                                                                </div>
+                                                                            </>
+                                                                        );
+                                                                    }
                                                                     const aMeta = actionMeta[log.action] || defaultAction;
                                                                     const eMeta = entityMeta[log.entityType] || { labelTR: log.entityType, icon: FileText };
                                                                     const AIcon = aMeta.icon;
@@ -683,7 +804,7 @@ export default function AuditTrailPage() {
                                                 </div>
                                             </div>
                                         );
-                                    })}
+                                    })})()}
                                 </div>
                             )}
                         </div>

@@ -37,8 +37,11 @@ public record AuditSummaryDto(
 public record UserAuditSummaryDto(
     Guid? UserId,
     string? UserName,
+    string? Email,
+    string? AvatarUrl,
     int ActionCount,
-    DateTime LastActionAt
+    DateTime LastActionAt,
+    string? LastAction
 );
 
 public record SuspiciousUserDto(
