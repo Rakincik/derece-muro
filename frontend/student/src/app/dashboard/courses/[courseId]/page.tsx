@@ -185,15 +185,10 @@ export default function CourseDetailPage() {
                         return null;
                     };
                     
-                    // 1. Sıralama önceliği: Admin elle sıralama yaptıysa (orderIndex)
-                    if (a.orderIndex !== b.orderIndex) {
-                        return (a.orderIndex || 0) - (b.orderIndex || 0);
-                    }
-                    
                     const titleA = a.sessionTitle || "";
                     const titleB = b.sessionTitle || "";
                     
-                    // 2. Sıralama önceliği: Title'dan çıkarılan tarihe göre (varsa)
+                    // 1. Sıralama önceliği: Title'dan çıkarılan tarihe göre (varsa)
                     const parsedDateA = extractDateFromTitle(titleA);
                     const parsedDateB = extractDateFromTitle(titleB);
                     
@@ -201,9 +196,14 @@ export default function CourseDetailPage() {
                         return parsedDateA.localeCompare(parsedDateB);
                     }
                     
-                    // 3. Sıralama önceliği: Alfabetik (numeric: true ile DERS-2 ve DERS-10'u doğru sıralar)
+                    // 2. Sıralama önceliği: Alfabetik (numeric: true ile DERS-2 ve DERS-10'u doğru sıralar)
                     if (titleA !== titleB) {
                         return titleA.localeCompare(titleB, 'tr', { numeric: true, sensitivity: 'base' });
+                    }
+
+                    // 3. Sıralama önceliği: Admin elle sıralama yaptıysa (orderIndex)
+                    if (a.orderIndex !== b.orderIndex) {
+                        return (a.orderIndex || 0) - (b.orderIndex || 0);
                     }
                     
                     // 4. En son çare: Oluşturulma tarihi

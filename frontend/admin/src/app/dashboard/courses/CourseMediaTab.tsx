@@ -254,12 +254,6 @@ export function CourseMediaTab({
     const combinedMedias = useMemo(() => {
         const list = [...medias];
         list.sort((a, b) => {
-            // 1. Sıralama önceliği: Admin elle sıralama yaptıysa (orderIndex)
-            if (a.orderIndex !== b.orderIndex) {
-                return a.orderIndex - b.orderIndex;
-            }
-            
-            // 2. Sıralama önceliği: Aynı sıradaysa tarihe göre (eskiden yeniye)
             let dateA = "";
             let dateB = "";
             let titleA = "";
@@ -290,7 +284,15 @@ export function CourseMediaTab({
             } else {
                 titleB = b.examTitle || "";
             }
-            // 3. Sıralama önceliği: Title'dan çıkarılan tarihe göre (varsa)
+
+            // 1. Eğer SADECE Admin panelinde Reorder (Sürükle bırak) modundaysak, her şeyi ez ve orderIndex'e göre diz
+            if (isReorderEnabled) {
+                if (a.orderIndex !== b.orderIndex) {
+                    return (a.orderIndex || 0) - (b.orderIndex || 0);
+                }
+            }
+
+            // 2. Sıralama önceliği: Title'dan çıkarılan tarihe göre (varsa)
             const parsedDateA = extractDateFromTitle(titleA);
             const parsedDateB = extractDateFromTitle(titleB);
             
@@ -298,9 +300,14 @@ export function CourseMediaTab({
                 return parsedDateA.localeCompare(parsedDateB);
             }
             
-            // 4. Sıralama önceliği: Alfabetik (numeric: true ile DERS-2 ve DERS-10'u doğru sıralar)
+            // 3. Sıralama önceliği: Alfabetik (numeric: true ile DERS-2 ve DERS-10'u doğru sıralar)
             if (titleA !== titleB) {
                 return titleA.localeCompare(titleB, 'tr', { numeric: true, sensitivity: 'base' });
+            }
+
+            // 4. Sıralama önceliği: Admin elle sıralama yaptıysa (orderIndex)
+            if (a.orderIndex !== b.orderIndex) {
+                return (a.orderIndex || 0) - (b.orderIndex || 0);
             }
             
             // 5. En son çare: Oluşturulma tarihi
