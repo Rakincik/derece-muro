@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Search, User, BarChart3, Video, BookOpen, FileText,
     Clock, Activity, Download, X, TrendingUp, TrendingDown,
-    Clock, Activity, Download, X, TrendingUp, TrendingDown,
     Monitor, Globe, ChevronDown, ChevronUp, Eye, RefreshCw, Users, ArrowUpDown
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
