@@ -142,7 +142,7 @@ export function useVideoPlayer(
             videoApi.updateProgress(token, tenantId, targetId, payload).catch(() => { });
         };
 
-        heartbeatRef.current = setInterval(sendProgress, 60_000);
+        heartbeatRef.current = setInterval(sendProgress, 90_000);
 
         // Tab kapanırken/video değişirken son veriyi gönder (sendBeacon ile)
         const flushOnUnload = () => {

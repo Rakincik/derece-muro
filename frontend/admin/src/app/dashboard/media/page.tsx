@@ -372,6 +372,14 @@ export default function MediaLibraryPage() {
                 for (const courseId of addedCourseIds) {
                     await mediaLibraryApi.bulkAssignFolderToCourse(courseId, courseAssignTarget.id);
                 }
+                if (removedCourseIds && removedCourseIds.length > 0) {
+                    const folderAssets = await mediaLibraryApi.getAssets(courseAssignTarget.id);
+                    for (const courseId of removedCourseIds) {
+                        for (const asset of folderAssets) {
+                            await mediaLibraryApi.removeMediaFromCourse(courseId, asset.id);
+                        }
+                    }
+                }
                 success(`Klasör içeriği kurslara tanımlandı.`);
             } else if (courseAssignTarget.type === 'bulk' && courseAssignTarget.bulkIds) {
                 for (const courseId of addedCourseIds) {

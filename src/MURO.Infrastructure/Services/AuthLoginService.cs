@@ -98,6 +98,20 @@ public class AuthLoginService : AuthServiceBase, IAuthLoginService
             old.IsActive = false;
             old.LogoutAt = DateTime.UtcNow;
             
+            // 🚀 Real-time kick: Remove from Redis cache instantly to bypass 5-min TTL loophole
+            if (_redis != null)
+            {
+                try
+                {
+                    var redisDb = _redis.GetDatabase();
+                    await redisDb.KeyDeleteAsync($"session:active:{old.Id}");
+                }
+                catch (Exception ex)
+                {
+                    // Redis connection issues shouldn't block the login flow, fail silently
+                }
+            }
+            
             if (old.IpAddress == ipAddress && old.DeviceInfo == newDeviceInfo)
             {
                 await LogSecurityEventAsync(user.Id, "SESSION_REPLACED", ipAddress, userAgent,

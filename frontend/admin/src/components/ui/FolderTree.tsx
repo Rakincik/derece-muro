@@ -86,7 +86,7 @@ const FolderNode: React.FC<FolderNodeProps> = ({
                     </button>
                     <Folder size={16} className={isActive ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'} />
                     <Tooltip content={folder.name} className="min-w-0 flex-1" position="top">
-                        <span className="text-[14.5px] font-semibold select-none block w-full break-words whitespace-normal leading-tight pr-2 py-0.5">{folder.name}</span>
+                        <span className={`${level === 0 ? "text-[13px]" : "text-[12.5px]"} font-semibold select-none block w-full truncate whitespace-nowrap leading-tight pr-2 py-0.5`}>{folder.name}</span>
                     </Tooltip>
                 </div>
 
@@ -307,7 +307,7 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
                                             <Folder size={16} className={isActive ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'} />
-                                            <span className="text-[14.5px] font-semibold select-none block flex-1 break-words whitespace-normal leading-tight pr-2 py-0.5">{folder.name}</span>
+                                            <span className="text-[13px] font-semibold select-none block flex-1 truncate whitespace-nowrap leading-tight pr-2 py-0.5">{folder.name}</span>
                                             
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0">
                                                 <Tooltip content="Alt Klasör Ekle">
@@ -367,7 +367,7 @@ export function FolderTree({ activeFolderId, onSelect, onAction, refreshTrigger,
                             onDrop={(e) => onDropOnFolder(e, null)}
                         >
                             <Folder size={18} className={activeFolderId === null ? 'text-blue-600' : 'text-gray-400'} />
-                            <span className="text-[14.5px] font-semibold">Ana Klasör</span>
+                            <span className="text-[13px] font-semibold">Ana Klasör</span>
                         </div>
 
                         {isLoading ? (

@@ -66,7 +66,8 @@ function GroupTreeItem({
     const isEmpty = group.memberCount === 0;
     return (
         <div
-            className={`flex items-center gap-2 p-1.5 pr-2 rounded-lg cursor-pointer group transition-colors select-none ${selected ? "bg-blue-50 border border-blue-100 shadow-sm" : "border border-transparent hover:bg-slate-50"}`}
+            className={`flex items-center gap-2 p-1.5 pr-3 rounded-lg cursor-pointer group transition-all duration-200 select-none ${selected ? "bg-blue-50/80 border border-blue-100/80 border-l-4 shadow-sm" : "border border-transparent hover:bg-slate-50"}`}
+            style={selected ? { borderLeftColor: group.color ?? "#3b82f6" } : undefined}
             onClick={onSelect}
         >
             <button onClick={e => { e.stopPropagation(); onToggle(); }} 
@@ -78,16 +79,16 @@ function GroupTreeItem({
                 {expanded ? <PiFolderOpenDuotone size={18} /> : <PiFolderDuotone size={18} />}
             </div>
             
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Tooltip content={group.name} position="bottom" className="flex-1 min-w-0 flex items-center">
+            <div className="flex-1 min-w-0">
+                <Tooltip content={group.name} position="bottom" className="w-full">
                     <span className={`text-[13px] truncate block w-full text-left ${selected ? "font-bold text-blue-900" : "font-medium text-slate-700 group-hover:text-slate-900"}`}>{group.name}</span>
                 </Tooltip>
-                
-                {/* Minimal Stats */}
-                <div className={`flex items-center gap-1.5 transition-opacity ${selected ? "opacity-80" : "opacity-40 group-hover:opacity-70"}`}>
-                    <span className="flex items-center gap-0.5 text-[10px] font-semibold"><Users size={10} /> {group.memberCount}</span>
-                    <span className="flex items-center gap-0.5 text-[10px] font-semibold"><BookOpen size={10} /> {group.courseCount}</span>
-                </div>
+            </div>
+            
+            {/* Minimal Stats (Pushed to the right) */}
+            <div className={`flex items-center gap-1.5 shrink-0 ml-auto transition-opacity ${selected ? "opacity-80" : "opacity-40 group-hover:opacity-70"}`}>
+                <span className="flex items-center gap-0.5 text-[10px] font-semibold"><Users size={10} /> {group.memberCount}</span>
+                <span className="flex items-center gap-0.5 text-[10px] font-semibold"><BookOpen size={10} /> {group.courseCount}</span>
             </div>
             
             {isEmpty && <Tooltip content="Boş grup" position="bottom"><span className={`shrink-0 ml-1 text-amber-400 ${selected ? "opacity-100" : "opacity-80"}`}><AlertTriangle size={12} /></span></Tooltip>}
@@ -635,11 +636,13 @@ export default function GroupsPage() {
                                                     className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Copy size={12} /> Kopyala</button></Tooltip>
                                                 <button onClick={() => openEdit(detail as unknown as GroupListDto)}
                                                     className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Edit3 size={12} /> Düzenle</button>
+                                                <button onClick={() => openCreateSubgroup(detail.id)}
+                                                    className="px-2 py-1 bg-white border border-[#E2E8F0] hover:bg-[#F0F4F8] rounded-md text-[#64748B] hover:text-[#0A1931] font-bold text-[10px] transition-colors shadow-sm flex items-center gap-1"><Plus size={12} /> Alt Grup Ekle</button>
                                             </div>
                                         </div>
 
                                         <div className="flex items-center flex-wrap gap-1.5">
-                                            <span className="whitespace-nowrap px-2 py-0.5 bg-white border border-[#E2E8F0] text-[#475569] text-[10px] rounded-md font-bold shadow-sm flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: detail.color ?? "#6366f1" }} />{detail.memberCount} öğrenci</span>
+                                            <span className="whitespace-nowrap px-2.5 py-0.5 bg-[#0A1931]/5 border border-[#0A1931]/10 text-[#0A1931] text-[11px] rounded-md font-bold shadow-sm flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ background: detail.color ?? "#6366f1" }} />{detail.memberCount} öğrenci</span>
                                             <span className="whitespace-nowrap px-2 py-0.5 bg-white border border-[#E2E8F0] text-[#475569] text-[10px] rounded-md font-bold shadow-sm">{detail.courseCount} ders</span>
                                             {detail.educationType && <span className="whitespace-nowrap px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] rounded-md font-bold border border-indigo-200 flex items-center gap-1">{getEducationIcon(detail.educationType, 12)} {detail.educationType}</span>}
                                             {detail.parentGroupName && <span className="whitespace-nowrap px-2 py-0.5 bg-[#F8FAFC] text-[#64748B] text-[10px] rounded-md border border-[#E2E8F0] font-bold shadow-sm">↑ {detail.parentGroupName}</span>}

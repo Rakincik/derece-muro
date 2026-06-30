@@ -4,7 +4,7 @@ import {
     Shield, Search, ChevronLeft, ChevronRight,
     User, FileText, Trash2, Edit3, Plus, RefreshCw, Clock, Globe,
     AlertTriangle, X, Activity, Eye, Lock, Smartphone, Monitor,
-    ArrowRight
+    ArrowRight, Check
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { auditApi, securityApi } from "@/lib/api/audits";
@@ -40,35 +40,107 @@ const parseUserAgent = (ua?: string) => {
     };
 };
 
+function IpLocation({ ip }: { ip?: string }) {
+    const [loc, setLoc] = useState<string>("");
+    
+    useEffect(() => {
+        if (!ip || ip === "Bilinmiyor" || ip.startsWith("127.") || ip.startsWith("192.168") || ip === "::1" || ip === "localhost") return;
+        
+        const cached = sessionStorage.getItem(`iploc_${ip}`);
+        if (cached) {
+            setLoc(cached);
+            return;
+        }
+
+        fetch(`https://ipapi.co/${ip}/json/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    const ilce = data.city || "";
+                    const il = data.region || "";
+                    const isp = data.org || "";
+                    
+                    let locationString = "";
+                    if (ilce && il) {
+                        locationString = `${ilce}, ${il}`;
+                    } else {
+                        locationString = il || ilce || "";
+                    }
+                    
+                    let ispFriendly = isp;
+                    if (isp.toLowerCase().includes("superonline")) ispFriendly = "Superonline";
+                    else if (isp.toLowerCase().includes("ttnet") || isp.toLowerCase().includes("telekom")) ispFriendly = "Türk Telekom";
+                    else if (isp.toLowerCase().includes("turkcell")) ispFriendly = "Turkcell Mobil";
+                    else if (isp.toLowerCase().includes("vodafone")) ispFriendly = "Vodafone";
+                    else if (isp.toLowerCase().includes("turknet")) ispFriendly = "TurkNet";
+                    
+                    const finalVal = locationString && ispFriendly 
+                        ? `${locationString} | ${ispFriendly}`
+                        : (locationString || ispFriendly || "");
+
+                    if (finalVal) {
+                        setLoc(finalVal);
+                        sessionStorage.setItem(`iploc_${ip}`, finalVal);
+                    }
+                }
+            })
+            .catch(() => {});
+    }, [ip]);
+
+    if (!loc) return null;
+    return <span className="text-[#1B3B6F] font-semibold text-[10px] ml-1.5 bg-[#1B3B6F]/5 px-1.5 py-0.5 rounded border border-[#1B3B6F]/10 font-sans shadow-sm">({loc})</span>;
+}
+
 const formatActionLabel = (action: string): string => {
+    if (!action) return "İşlem Yaptı";
+
+    let act = action;
+    let entity = "";
+
+    if (action.includes(":")) {
+        const parts = action.split(":");
+        act = parts[0];
+        entity = parts[1];
+    }
+
+    if (act === "WatchSession" || entity === "VideoProgress") {
+        return "Video İzleme Aktivitesi";
+    }
+
     const translations: Record<string, string> = {
-        Create: "Oluşturuldu",
-        Update: "Güncellendi",
-        Delete: "Silindi",
-        BulkCreate: "Toplu Eklendi",
-        BulkDelete: "Toplu Silindi",
-        Submit: "Gönderildi / Teslim Edildi",
-        Grade: "Puanlandı / Değerlendirildi",
-        StatusChange: "Durumu Değiştirildi",
-        Clone: "Kopyalandı (Klonlandı)",
-        AddMember: "Üye Eklendi",
-        RemoveMember: "Üye Çıkarıldı",
-        BulkSend: "Toplu Gönderildi",
-        Generate: "AI ile Üretildi",
-        Ask: "Soru Soruldu",
-        Answer: "Cevaplandı",
-        DeleteAnswer: "Cevap Silindi",
-        UpdateStatus: "Statü Güncellendi",
-        AddNote: "Not Eklendi",
-        DeleteNote: "Not Silindi",
-        StartLive: "Canlı Ders Başlatıldı",
-        ForceDelete: "Kalıcı Olarak Silindi",
+        Create: "Oluşturdu",
+        Update: "Güncelledi",
+        Delete: "Sildi",
+        BulkCreate: "Toplu Ekleme Yaptı",
+        BulkDelete: "Toplu Silme Yaptı",
+        Submit: "Teslim Etti",
+        Grade: "Notlandırdı",
+        StatusChange: "Durumunu Değiştirdi",
+        Clone: "Klonladı",
+        AddMember: "Üye Eklemesi Yaptı",
+        RemoveMember: "Üye Çıkarması Yaptı",
+        BulkSend: "Toplu Gönderim Yaptı",
+        Generate: "AI ile Üretti",
+        Ask: "Soru Sordu",
+        Answer: "Cevapladı",
+        DeleteAnswer: "Cevap Sildi",
+        UpdateStatus: "Statü Güncelledi",
+        AddNote: "Not Eklemesi Yaptı",
+        DeleteNote: "Not Sildi",
+        StartLive: "Canlı Ders Başlattı",
+        ForceDelete: "Kalıcı Olarak Sildi",
         AssignRole: "Rol Atandı",
-        RemoveRole: "Rol Kaldırıldı",
+        RemoveRole: "Rol Kaldırdı",
         Login: "Giriş Yaptı",
         Logout: "Çıkış Yaptı",
     };
-    return translations[action] || `İşlem Yaptı (${action})`;
+
+    const actionText = translations[act] || act;
+    if (entity) {
+        const entityText = formatEntityLabel(entity);
+        return `${entityText} ${actionText.toLowerCase()}`;
+    }
+    return actionText;
 };
 
 const formatEntityLabel = (entityType: string): string => {
@@ -90,6 +162,7 @@ const formatEntityLabel = (entityType: string): string => {
         VideoNote: "Video Notu",
         Package: "Paket",
         Session: "Canlı Ders Oturumu",
+        DeviceSession: "Cihaz Oturumu"
     };
     return translations[entityType] || entityType;
 };
@@ -105,7 +178,7 @@ const keyTranslations: Record<string, string> = {
     LastName: "Soyad",
     Email: "E-Posta",
     Role: "Kullanıcı Rolü",
-    IsActive: "Hesap Durumu",
+    IsActive: "Aktiflik Durumu",
     PhoneNumber: "Telefon Numarası",
     Title: "Başlık",
     Description: "Açıklama",
@@ -247,7 +320,11 @@ const RenderLogDetails = ({ details }: { details: string }) => {
     const ignoredKeys = [
         "MediaAssetId", "ReplayCount", "SkipCount", "TotalSeconds", 
         "UserId", "UpdatedAt", "CompletedAt", "Id", "AuditDisplayName",
-        "GroupId", "TenantId", "IsDeleted"
+        "GroupId", "TenantId", "IsDeleted", "FailedLoginCount", 
+        "AccessFailedCount", "ConcurrencyStamp", "SecurityStamp", 
+        "PasswordHash", "PasswordSalt", "NormalizedEmail", 
+        "NormalizedUserName", "EmailConfirmed", "PhoneNumberConfirmed",
+        "LockoutEnd", "LockoutEnabled", "TwoFactorEnabled"
     ];
 
     // JSON formatındaki yeni kayıtlar
@@ -337,6 +414,7 @@ export default function AuditTrailPage() {
     
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState<"date" | "count">("date");
     const [loading, setLoading] = useState(true);
 
     // Detail Modal States
@@ -350,7 +428,7 @@ export default function AuditTrailPage() {
         setLoading(true);
         try {
             const [usersRes, suspRes] = await Promise.all([
-                auditApi.getUserAudits(token, tenantId, { page, pageSize: 10, search }),
+                auditApi.getUserAudits(token, tenantId, { page, pageSize: 10, search, sortBy }),
                 auditApi.getSuspiciousUsers(token, tenantId)
             ]);
             setUsers(usersRes.items);
@@ -362,7 +440,7 @@ export default function AuditTrailPage() {
         } finally {
             setLoading(false);
         }
-    }, [token, tenantId, page, search]);
+    }, [token, tenantId, page, search, sortBy]);
 
     useEffect(() => { fetchMasterData(); }, [fetchMasterData]);
 
@@ -384,8 +462,8 @@ export default function AuditTrailPage() {
 
                 // Merge and sort chronologically (newest first)
                 const merged = [
-                    ...sysLogs.items.map(l => ({ ...l, _type: 'system' })),
-                    ...secLogs.items.map(l => ({ ...l, _type: 'security' }))
+                    ...sysLogs.items.map((l: any) => ({ ...l, _type: 'system' })),
+                    ...secLogs.items.map((l: any) => ({ ...l, _type: 'security' }))
                 ];
                 merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 
@@ -478,11 +556,27 @@ export default function AuditTrailPage() {
                         <table className="w-full min-w-[550px]">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-[#E2E8F0]">
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Toplam İşlem</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Kullanıcı</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Son İşlem</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">Durum</th>
-                                    <th className="text-right px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap">İşlemler</th>
+                                    <th 
+                                        className={`text-left px-5 py-3 text-[10px] font-bold uppercase whitespace-nowrap cursor-pointer select-none transition-colors hover:text-[#0A1931] ${sortBy === "count" ? "text-[#0A1931] font-extrabold" : "text-[#A9A9A9]"}`}
+                                        onClick={() => { setSortBy("count"); setPage(1); }}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            Toplam İşlem
+                                            {sortBy === "count" && <span className="text-[#0A1931] text-[8px]">▼</span>}
+                                        </div>
+                                    </th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap select-none">Kullanıcı</th>
+                                    <th 
+                                        className={`text-left px-5 py-3 text-[10px] font-bold uppercase whitespace-nowrap cursor-pointer select-none transition-colors hover:text-[#0A1931] ${sortBy === "date" ? "text-[#0A1931] font-extrabold" : "text-[#A9A9A9]"}`}
+                                        onClick={() => { setSortBy("date"); setPage(1); }}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            Son İşlem
+                                            {sortBy === "date" && <span className="text-[#0A1931] text-[8px]">▼</span>}
+                                        </div>
+                                    </th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap select-none">Durum</th>
+                                    <th className="text-right px-5 py-3 text-[10px] font-bold text-[#A9A9A9] uppercase whitespace-nowrap select-none">İşlemler</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -531,9 +625,13 @@ export default function AuditTrailPage() {
                                                 </p>
                                             </td>
                                             <td className="px-5 py-3">
-                                                {isSuspicious && (
+                                                {isSuspicious ? (
                                                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100">
-                                                        <AlertTriangle size={10} /> Riskli Davranış
+                                                        <AlertTriangle size={10} /> Riskli
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-lg border border-emerald-100">
+                                                        <Check size={10} /> Güvenli
                                                     </span>
                                                 )}
                                             </td>
@@ -771,7 +869,21 @@ export default function AuditTrailPage() {
                                                                                     Yaklaşık {Math.round((new Date(log.sessionEndTime).getTime() - new Date(log.sessionStartTime).getTime()) / 60000)} dk kesintisiz izleme ({log.groupedCount} hareket)
                                                                                 </p>
                                                                                 <div className="mt-3">
-                                                                                    {log.details && <RenderLogDetails details={log.details} />}
+                                                                                    {(() => {
+                                                                                        let totalWatchedStr = "-";
+                                                                                        try {
+                                                                                            const parsed = JSON.parse(log.details);
+                                                                                            const watchedSecVal = parsed?.changes?.WatchedSeconds?.new;
+                                                                                            if (watchedSecVal !== undefined) totalWatchedStr = formatAuditValue("WatchedSeconds", watchedSecVal);
+                                                                                        } catch(e) {}
+                                                                                        
+                                                                                        return (
+                                                                                            <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100/50 flex items-center justify-between">
+                                                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Kümülatif İzleme Süresi</span>
+                                                                                                <span className="text-xs font-bold text-slate-700 font-mono">{totalWatchedStr}</span>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
                                                                                 </div>
                                                                             </>
                                                                         );
@@ -794,6 +906,7 @@ export default function AuditTrailPage() {
                                                                             <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                                                                                 <p className="text-[10px] text-[#A0AEC0] font-mono flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md">
                                                                                     <Globe size={10}/> IP: {log.ipAddress || "Bilinmiyor"}
+                                                                                    <IpLocation ip={log.ipAddress} />
                                                                                 </p>
                                                                             </div>
                                                                         </>
@@ -817,7 +930,10 @@ export default function AuditTrailPage() {
                                                                         <span className="text-[#A0AEC0]">{parseUserAgent(log.userAgent).browser}</span>
                                                                     </div>
                                                                 )}
-                                                                <p className="text-[10px] text-[#A0AEC0] mt-2 font-mono flex items-center gap-1"><Globe size={10}/> IP: {log.ipAddress || "Bilinmiyor"}</p>
+                                                                <p className="text-[10px] text-[#A0AEC0] mt-2 font-mono flex items-center gap-1">
+                                                                    <Globe size={10}/> IP: {log.ipAddress || "Bilinmiyor"}
+                                                                    <IpLocation ip={log.ipAddress} />
+                                                                </p>
                                                             </div>
                                                         )}
                                                     </div>

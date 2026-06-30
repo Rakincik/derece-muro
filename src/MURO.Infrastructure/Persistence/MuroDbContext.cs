@@ -73,6 +73,7 @@ public class MuroDbContext : DbContext
 
     // Support
     public DbSet<Faq> Faqs => Set<Faq>();
+    public DbSet<TelegramMessageMapping> TelegramMessageMappings => Set<TelegramMessageMapping>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -330,6 +331,16 @@ public class MuroDbContext : DbContext
         modelBuilder.Entity<SupportTicket>(entity =>
         {
             entity.HasIndex(st => new { st.Status  });
+        });
+
+        // TelegramMessageMapping
+        modelBuilder.Entity<TelegramMessageMapping>(entity =>
+        {
+            entity.HasIndex(t => t.TelegramMessageId).IsUnique();
+            entity.HasOne(t => t.SupportTicket)
+                  .WithMany()
+                  .HasForeignKey(t => t.SupportTicketId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // DeviceSession — 🔧 kullanıcı oturum sorgusu

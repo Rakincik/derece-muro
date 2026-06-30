@@ -12,11 +12,13 @@ public class SupportService : ISupportService
 {
     private readonly MuroDbContext _context;
     private readonly ICacheService _cache;
+    private readonly ITelegramBotService _telegramBotService;
 
-    public SupportService(MuroDbContext context, ICacheService cache)
+    public SupportService(MuroDbContext context, ICacheService cache, ITelegramBotService telegramBotService)
     {
         _context = context;
         _cache = cache;
+        _telegramBotService = telegramBotService;
     }
 
     public async Task<PagedResult<TicketListDto>> GetTicketsAsync(int page, int pageSize, string? status, Guid? userId = null)
@@ -95,6 +97,10 @@ public class SupportService : ISupportService
 
         var user = await _context.Users.FindAsync(userId)
             ?? throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            
+        ticket.User = user;
+        _ = _telegramBotService.SendNewTicketNotificationAsync(ticket);
+
         return new TicketListDto(ticket.Id, ticket.Subject, ticket.Status.ToString(),
             ticket.Priority, ticket.Category, $"{user.FirstName} {user.LastName}", 0, ticket.CreatedAt);
     }

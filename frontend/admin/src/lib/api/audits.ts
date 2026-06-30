@@ -41,12 +41,13 @@ export const auditApi = {
     },
 
     getUserAudits: (token: string, tenantId: string, params?: {
-        page?: number; pageSize?: number; search?: string;
+        page?: number; pageSize?: number; search?: string; sortBy?: string;
     }) => {
         const qs = new URLSearchParams();
         if (params?.page) qs.set('page', String(params.page));
         if (params?.pageSize) qs.set('pageSize', String(params.pageSize));
         if (params?.search) qs.set('search', params.search);
+        if (params?.sortBy) qs.set('sortBy', params.sortBy);
         return api<PagedResult<UserAuditSummaryDto>>(`/audit/users?${qs.toString()}`, { token, tenantId });
     },
 

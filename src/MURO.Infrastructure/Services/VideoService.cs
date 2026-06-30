@@ -215,6 +215,9 @@ public class VideoProgressService : IVideoProgressService
             progress.CompletedAt ??= DateTime.UtcNow;
         }
 
+        var title = await _context.MediaAssets.Where(m => m.Id == mediaAssetId).Select(m => m.Title).FirstOrDefaultAsync() ?? "Eğitim Videosu";
+        progress.AuditDisplayName = title;
+
         await _context.SaveChangesAsync();
         await _cache.RemoveByPrefixAsync($"videoprogress:{userId}:");
         await _cache.RemoveByPrefixAsync($"student:dashboard:{userId}");

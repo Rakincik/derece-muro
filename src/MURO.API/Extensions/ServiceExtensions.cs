@@ -57,6 +57,9 @@ public static class ServiceExtensions
         services.AddScoped<ISecurityService, SecurityService>();
         services.AddScoped<IRecordingService, RecordingService>();
         services.AddScoped<IWebhookHandlerService, WebhookHandlerService>();
+        
+        services.AddHttpClient<ITelegramBotService, TelegramBotService>();
+        services.AddScoped<ITelegramBotService, TelegramBotService>();
 
         // --- VEP Control Plane ---
         services.AddScoped<ISystemHealthService, SystemHealthService>();

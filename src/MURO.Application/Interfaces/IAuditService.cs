@@ -14,7 +14,7 @@ public interface IAuditService
 
     Task<AuditSummaryDto> GetSummaryAsync(DateTime from, DateTime to);
     
-    Task<PagedResult<UserAuditSummaryDto>> GetUserAuditSummariesAsync(int page, int pageSize, string? search = null);
+    Task<PagedResult<UserAuditSummaryDto>> GetUserAuditSummariesAsync(int page, int pageSize, string? search = null, string? sortBy = null);
     
     Task<List<SuspiciousUserDto>> GetSuspiciousUsersAsync();
 }

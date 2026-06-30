@@ -113,10 +113,10 @@ public class AuditService : IAuditService
         }, TimeSpan.FromMinutes(2));
     }
 
-    public async Task<PagedResult<UserAuditSummaryDto>> GetUserAuditSummariesAsync(int page, int pageSize, string? search = null)
+    public async Task<PagedResult<UserAuditSummaryDto>> GetUserAuditSummariesAsync(int page, int pageSize, string? search = null, string? sortBy = null)
     {
         var q = _context.AuditLogs.AsNoTracking()
-            .Where(a => true);
+            .Where(a => a.UserId != null); // FIX: Sistem / Anonim (null UserId) kayıtlarını kullanıcı listesinden çıkarıyoruz.
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -133,7 +133,17 @@ public class AuditService : IAuditService
 
         var total = await grouped.CountAsync();
         
-        var items = await grouped.OrderByDescending(x => x.ActionCount)
+        var query = grouped;
+        if (sortBy == "count")
+        {
+            query = query.OrderByDescending(x => x.ActionCount);
+        }
+        else
+        {
+            query = query.OrderByDescending(x => x.LastActionAt);
+        }
+
+        var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -146,11 +156,12 @@ public class AuditService : IAuditService
             .GroupBy(a => a.UserId)
             .Select(g => new {
                 UserId = g.Key,
-                LastAction = g.OrderByDescending(a => a.CreatedAt).Select(a => a.Action).FirstOrDefault()
-            }).ToDictionaryAsync(x => x.UserId, x => x.LastAction);
+                LastAction = g.OrderByDescending(a => a.CreatedAt).Select(a => a.Action).FirstOrDefault(),
+                LastEntity = g.OrderByDescending(a => a.CreatedAt).Select(a => a.EntityType).FirstOrDefault()
+            }).ToDictionaryAsync(x => x.UserId, x => new { x.LastAction, x.LastEntity });
 
         var result = items.Select(x => {
-            string userName = "Sistem / Anonim";
+            string userName = "Bilinmeyen Kullanıcı";
             string? email = null;
             string? avatar = null;
             string? lastAction = null;
@@ -160,10 +171,10 @@ public class AuditService : IAuditService
                     userName = $"{u.FirstName} {u.LastName}".Trim();
                     if (string.IsNullOrEmpty(userName)) userName = u.Email ?? "Bilinmeyen Kullanıcı";
                     email = u.Email;
-                    avatar = null; // Removed ProfileImageUrl as it does not exist on User entity
+                    avatar = null;
                 }
-                if (lastActions.TryGetValue(x.UserId, out var act)) {
-                    lastAction = act;
+                if (lastActions.TryGetValue(x.UserId.Value, out var act)) {
+                    lastAction = $"{act.LastAction}:{act.LastEntity}";
                 }
             }
 

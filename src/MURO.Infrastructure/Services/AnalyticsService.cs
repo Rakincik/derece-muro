@@ -187,10 +187,16 @@ public class AnalyticsService : IAnalyticsService
                 .CountAsync();
 
             // Oturum bazlı yoklama
+            // FIX: ScheduledStart.HasValue zorunluluğu kaldırıldı. 
+            // Eğer oturumun tarihi yoksa ama durumu Ended veya Live ise (yani yapıldıysa/yapılıyorsa) rapora dahil edilmeli.
             var sessions = await _context.Sessions.AsNoTracking()
-                .Where(s => s.CourseId == courseId && !s.IsDeleted && s.ScheduledStart.HasValue && s.Description != "Video (VOD)" && s.Status != SessionStatus.Cancelled)
+                .Where(s => s.CourseId == courseId 
+                         && !s.IsDeleted 
+                         && (s.ScheduledStart.HasValue || s.Status == SessionStatus.Ended || s.Status == SessionStatus.Live) 
+                         && s.Description != "Video (VOD)" 
+                         && s.Status != SessionStatus.Cancelled)
                 .Include(s => s.SessionAttendances)
-                .OrderBy(s => s.ScheduledStart)
+                .OrderBy(s => s.ScheduledStart ?? s.CreatedAt)
                 .ToListAsync();
 
             var sessionSummaries = sessions.Select(s =>
@@ -199,7 +205,7 @@ public class AnalyticsService : IAnalyticsService
                 var presentCount = presentStudents.Count;
                 var rate = totalEnrolled > 0 ? Math.Round((double)presentCount / totalEnrolled * 100, 1) : 0;
                 return new SessionAttendanceSummaryDto(
-                    s.Id, s.Title, s.ScheduledStart, presentCount, totalEnrolled, rate, presentStudents);
+                    s.Id, s.Title, s.ScheduledStart ?? s.CreatedAt, presentCount, totalEnrolled, rate, presentStudents);
             }).ToList();
 
             var avgRate = sessionSummaries.Any()
@@ -243,18 +249,36 @@ public class AnalyticsService : IAnalyticsService
 
             var accessibleCourseIds = await _groupAccessService.GetAccessibleCourseIdsAsync(studentId);
 
+            // ── Canlı Ders Devam ──────────────────────────────────────────────
+            // FIX: ScheduledStart.HasValue zorunluluğu kaldırıldı. Tarih atanmamış olsa dahi Ended veya Live olan oturumlar sayılır.
             var totalSessions = await _context.Sessions.AsNoTracking()
-                .CountAsync(s => accessibleCourseIds.Contains(s.CourseId) && !s.IsDeleted && s.ScheduledStart.HasValue && s.ScheduledStart < DateTime.UtcNow && s.Description != "Video (VOD)" && s.Status != SessionStatus.Cancelled);
+                .CountAsync(s => accessibleCourseIds.Contains(s.CourseId) 
+                    && !s.IsDeleted 
+                    && ((s.ScheduledStart.HasValue && s.ScheduledStart < DateTime.UtcNow) || s.Status == SessionStatus.Ended || s.Status == SessionStatus.Live) 
+                    && s.Description != "Video (VOD)" 
+                    && s.Status != SessionStatus.Cancelled);
 
+            // FIX: attendedCount sorgusuna accessibleCourseIds filtresi eklendi.
+            // Ayrıca tarihi null olan ama yapılmış/canlı oturumları da kapsayacak şekilde güncellendi.
             var attendedCount = await _context.SessionAttendances.AsNoTracking()
-                .CountAsync(sa => sa.UserId == studentId && !sa.Session.IsDeleted && sa.Session.ScheduledStart.HasValue && sa.Session.Description != "Video (VOD)" && sa.Session.Status != SessionStatus.Cancelled);
+                .CountAsync(sa => sa.UserId == studentId
+                    && accessibleCourseIds.Contains(sa.Session.CourseId)
+                    && !sa.Session.IsDeleted
+                    && ((sa.Session.ScheduledStart.HasValue && sa.Session.ScheduledStart < DateTime.UtcNow) || sa.Session.Status == SessionStatus.Ended || sa.Session.Status == SessionStatus.Live)
+                    && sa.Session.Description != "Video (VOD)"
+                    && sa.Session.Status != SessionStatus.Cancelled);
 
+            // ── Video İzleme ──────────────────────────────────────────────────
             var videoProgress = await _context.VideoProgresses.AsNoTracking()
                 .Where(vp => vp.UserId == studentId)
                 .ToListAsync();
 
+            // FIX: Sadece HLS'i hazır olan gerçek video dosyalarını say (PDF, ses dosyası vb. hariç).
             var totalVideos = await _context.MediaAssets.AsNoTracking()
-                .CountAsync(m => (m.CourseId != null && accessibleCourseIds.Contains(m.CourseId.Value)) || m.CourseMedias.Any(cm => accessibleCourseIds.Contains(cm.CourseId)));
+                .CountAsync(m => m.Status == Domain.Enums.MediaStatus.Ready
+                    && m.HlsPath != null
+                    && ((m.CourseId != null && accessibleCourseIds.Contains(m.CourseId.Value))
+                        || m.CourseMedias.Any(cm => accessibleCourseIds.Contains(cm.CourseId))));
 
             var submittedAssignments = await _context.AssignmentSubmissions.AsNoTracking()
                 .CountAsync(s => s.UserId == studentId);
@@ -264,7 +288,11 @@ public class AnalyticsService : IAnalyticsService
                 .Select(r => r.Score)
                 .ToListAsync();
 
-            var completedVideos = videoProgress.Count(vp => vp.CompletedAt != null);
+            // FIX: CompletedAt != null VEYA izleme oranı >= %80 olan videoları "tamamlanmış" say.
+            // Böylece videonun %80'ini izleyen ama CompletedAt set edilmemiş öğrenciler de sayılır.
+            var completedVideos = videoProgress.Count(vp =>
+                vp.CompletedAt != null ||
+                (vp.TotalSeconds > 0 && (double)vp.WatchedSeconds / vp.TotalSeconds >= 0.80));
             var totalWatchedMinutes = videoProgress.Sum(vp => vp.WatchedSeconds) / 60;
             var avgScore = examScores.Any() ? Math.Round(examScores.Average(), 1) : 0;
 

@@ -49,9 +49,10 @@ public class AuditController : ControllerBase
     public async Task<ActionResult<PagedResult<UserAuditSummaryDto>>> GetUserAudits(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null)
     {
-        var result = await _auditService.GetUserAuditSummariesAsync(page, pageSize, search);
+        var result = await _auditService.GetUserAuditSummariesAsync(page, pageSize, search, sortBy);
         return Ok(result);
     }
 
