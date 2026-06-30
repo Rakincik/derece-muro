@@ -298,10 +298,12 @@ public class MediaService : IMediaService
         if (p.TotalSeconds > 0 && p.WatchedSeconds >= p.TotalSeconds * 0.9)
             p.CompletedAt ??= DateTime.UtcNow;
 
+        var title = p.MediaAsset?.Title ?? await _context.MediaAssets.Where(m => m.Id == mediaAssetId).Select(m => m.Title).FirstOrDefaultAsync() ?? "Bilinmeyen Video";
+        p.AuditDisplayName = title;
+
         await _context.SaveChangesAsync();
 
         var pct = p.TotalSeconds > 0 ? Math.Round(p.WatchedSeconds / (double)p.TotalSeconds * 100, 1) : 0;
-        var title = await _context.MediaAssets.Where(m => m.Id == mediaAssetId).Select(m => m.Title).FirstOrDefaultAsync() ?? "";
         return new VideoProgressDto(p.Id, p.MediaAssetId, title, p.WatchedSeconds, p.TotalSeconds,
             p.LastPosition, pct, p.CompletedAt, p.UpdatedAt);
     }

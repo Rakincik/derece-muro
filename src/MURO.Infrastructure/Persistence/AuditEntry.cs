@@ -138,10 +138,13 @@ public class AuditEntry
         string? nameValue = null;
         string? titleValue = null;
         string? emailValue = null;
+        string? auditDisplayName = null;
 
         foreach (var prop in properties)
         {
-            if (prop.Name.Equals("Name", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals("Ad", StringComparison.OrdinalIgnoreCase))
+            if (prop.Name.Equals("AuditDisplayName", StringComparison.OrdinalIgnoreCase))
+                auditDisplayName = prop.GetValue(entity)?.ToString();
+            else if (prop.Name.Equals("Name", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals("Ad", StringComparison.OrdinalIgnoreCase))
                 nameValue = prop.GetValue(entity)?.ToString();
             else if (prop.Name.Equals("Title", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals("Baslik", StringComparison.OrdinalIgnoreCase))
                 titleValue = prop.GetValue(entity)?.ToString();
@@ -149,6 +152,6 @@ public class AuditEntry
                 emailValue = prop.GetValue(entity)?.ToString();
         }
 
-        return nameValue ?? titleValue ?? emailValue ?? TableName;
+        return auditDisplayName ?? nameValue ?? titleValue ?? emailValue ?? TableName;
     }
 }

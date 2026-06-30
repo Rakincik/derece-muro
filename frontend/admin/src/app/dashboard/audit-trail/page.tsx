@@ -746,7 +746,7 @@ export default function AuditTrailPage() {
                                                                                         Video İzleme Oturumu
                                                                                     </span>
                                                                                 </div>
-                                                                                <p className="text-sm font-bold text-[#0A1931] mb-1.5">🎬 {log.entityName || "Video"} izlendi</p>
+                                                                                <p className="text-sm font-bold text-[#0A1931] mb-1.5">🎬 {log.entityName === "VideoProgress" ? "Eğitim Videosu" : (log.entityName || "Video")} izlendi</p>
                                                                                 <p className="text-xs text-[#A0AEC0] mt-1.5">
                                                                                     Yaklaşık {Math.round((new Date(log.sessionEndTime).getTime() - new Date(log.sessionStartTime).getTime()) / 60000)} dk kesintisiz izleme ({log.groupedCount} hareket)
                                                                                 </p>

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace MURO.Domain.Entities;
 
 public class VideoProgress
@@ -12,6 +14,9 @@ public class VideoProgress
     public int ReplayCount { get; set; } // Kaç kez geri sarıldı
     public DateTime? CompletedAt { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [NotMapped]
+    public string? AuditDisplayName { get; set; }
 
     // Navigation
     public User User { get; set; } = null!;
