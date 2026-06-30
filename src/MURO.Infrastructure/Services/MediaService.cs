@@ -289,7 +289,7 @@ public class MediaService : IMediaService
         }
         else
         {
-            p.WatchedSeconds = Math.Max(p.WatchedSeconds, request.WatchedSeconds);
+            p.WatchedSeconds += request.WatchedSeconds; // Frontend artık delta gönderiyor
             p.TotalSeconds = request.TotalSeconds;
             p.LastPosition = request.LastPosition;
             p.UpdatedAt = DateTime.UtcNow;

@@ -25,6 +25,7 @@ export function useVideoPlayer(
     const watchTimerRef = useRef<NodeJS.Timeout | null>(null);
     const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
     const watchStartRef = useRef<number>(0);
+    const lastSentElapsedRef = useRef<number>(0);
 
     // Sorted recordings for playlist (now trusts the order passed from page.tsx which respects CourseMedia OrderIndex)
     const sortedRecordings = [...recordings];
@@ -105,6 +106,7 @@ export function useVideoPlayer(
     useEffect(() => {
         if (!selectedRec) return;
         watchStartRef.current = Date.now();
+        lastSentElapsedRef.current = 0;
         setIframeLoaded(false);
         try { localStorage.setItem(lastWatchedKey, selectedRec.id); } catch { /* ignore */ }
 
@@ -124,12 +126,16 @@ export function useVideoPlayer(
 
         const sendProgress = () => {
             const elapsed = Math.floor((Date.now() - watchStartRef.current) / 1000);
-            if (elapsed < 5) return; // 5sn'den az izlemediyse gönderme
+            const delta = elapsed - lastSentElapsedRef.current;
+            if (delta < 5) return; // 5sn'den az izlemediyse gönderme
+            
             const payload = {
-                watchedSeconds: elapsed,
+                watchedSeconds: delta, // Sadece bu aralıkta izlenen kısmı gönder (Backend'de toplanacak)
                 totalSeconds: selectedRec.durationSeconds || 0,
-                lastPosition: elapsed,
+                lastPosition: (selectedRec.lastPosition || 0) + elapsed, // Tahmini güncel pozisyon
             };
+            lastSentElapsedRef.current = elapsed;
+
             const targetId = selectedRec.mediaAssetId || selectedRec.id;
             // localStorage'a yaz — tab kapansa bile kaybolmasın
             try { localStorage.setItem(`muro_progress_${targetId}`, JSON.stringify(payload)); } catch { }
@@ -141,12 +147,14 @@ export function useVideoPlayer(
         // Tab kapanırken/video değişirken son veriyi gönder (sendBeacon ile)
         const flushOnUnload = () => {
             const elapsed = Math.floor((Date.now() - watchStartRef.current) / 1000);
-            if (elapsed < 5) return;
+            const delta = elapsed - lastSentElapsedRef.current;
+            if (delta < 5) return;
+
             const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5292/api/v1";
             const body = JSON.stringify({
-                watchedSeconds: elapsed,
+                watchedSeconds: delta,
                 totalSeconds: selectedRec.durationSeconds || 0,
-                lastPosition: elapsed,
+                lastPosition: (selectedRec.lastPosition || 0) + elapsed,
             });
             const targetId = selectedRec.mediaAssetId || selectedRec.id;
             // sendBeacon tab kapanırken bile isteği tamamlar

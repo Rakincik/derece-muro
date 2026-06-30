@@ -202,7 +202,7 @@ public class VideoProgressService : IVideoProgressService
             _context.VideoProgresses.Add(progress);
         }
 
-        progress.WatchedSeconds = request.WatchedSeconds;
+        progress.WatchedSeconds += request.WatchedSeconds;
         progress.TotalSeconds = request.TotalSeconds;
         progress.LastPosition = request.LastPosition;
         progress.SkipCount += request.SkipCount;
