@@ -863,7 +863,7 @@ function HlsVideoPlayer({ src, mediaId, vttPath }: { src: string; mediaId: strin
             const plyrOptions: any = {
                 controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
                 settings: ['captions', 'quality', 'speed'],
-                speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+                speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5] },
                 keyboard: { focused: true, global: true }
             };
 
