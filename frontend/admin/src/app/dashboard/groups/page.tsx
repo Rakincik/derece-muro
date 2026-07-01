@@ -121,6 +121,7 @@ export default function GroupsPage() {
     const { token, currentTenantId: tenantId } = useAuth();
     const { success, error: toastError } = useToast();
 
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [groups, setGroups] = useState<GroupListDto[]>([]);
     const [detail, setDetail] = useState<GroupDetailDto | null>(null);
     const [loading, setLoading] = useState(true);
@@ -198,22 +199,22 @@ export default function GroupsPage() {
         }
     };
 
-    const loadGroups = useCallback(async () => {
+    const loadGroups = useCallback(async (isInitial = false) => {
         if (!token || !tenantId) return;
         setLoading(true);
         try {
             const res = await groupsApi.list(token, tenantId, { pageSize: 200 });
             const list = Array.isArray(res) ? res : (res as { items?: GroupListDto[] }).items ?? [];
             setGroups(list);
-            if (!selectedId && list.length > 0) {
+            if (isInitial && list.length > 0) {
                 setSelectedId(list[0].id);
                 setExpanded(new Set([list[0].id]));
             }
         } catch { toastError("Hata", "Gruplar yüklenemedi."); }
         finally { setLoading(false); }
-    }, [token, tenantId, selectedId]);
+    }, [token, tenantId]);
 
-    useEffect(() => { loadGroups(); }, [loadGroups]);
+    useEffect(() => { loadGroups(true); }, [loadGroups]);
 
     useEffect(() => {
         if (!selectedId || !token || !tenantId) return;
@@ -541,11 +542,21 @@ export default function GroupsPage() {
             {/* Header & Alert */}
             <div className="flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-                    <div>
-                        <h1 className="text-lg sm:text-xl font-bold text-[#0A1931] flex items-center gap-2">
-                            <FolderTree size={18} className="text-[#1B3B6F]" /> Gruplar
-                        </h1>
-                        <p className="text-[11px] sm:text-xs text-[#A9A9A9] mt-0.5">Öğrenci gruplarını yönetin</p>
+                    <div className="flex items-center gap-2.5">
+                        <Tooltip content={isSidebarVisible ? "Grup Panelini Gizle" : "Grup Panelini Göster"}>
+                            <button 
+                                onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+                                className={`p-2 rounded-xl border transition-all ${isSidebarVisible ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-gray-400 border-[#E2E8F0] hover:bg-gray-50'} flex items-center justify-center shrink-0 shadow-sm`}
+                            >
+                                <PiFolderDuotone size={16} />
+                            </button>
+                        </Tooltip>
+                        <div>
+                            <h1 className="text-lg sm:text-xl font-bold text-[#0A1931] flex items-center gap-2">
+                                Gruplar
+                            </h1>
+                            <p className="text-[11px] sm:text-xs text-[#A9A9A9] mt-0.5">Öğrenci gruplarını yönetin</p>
+                        </div>
                     </div>
                     
                     {emptyGroups > 0 && (
@@ -589,7 +600,7 @@ export default function GroupsPage() {
             {/* Main Content */}
             <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
                 {/* Left Panel - Group Tree */}
-                <div className="w-full lg:w-[35%] lg:min-w-[320px] lg:max-w-[480px] h-[350px] lg:h-auto flex flex-col bg-white rounded-2xl sm:rounded-[1.5rem] border border-[#E2E8F0] shadow-sm overflow-hidden shrink-0 lg:shrink-0">
+                <div className={`w-full lg:w-[35%] lg:min-w-[320px] lg:max-w-[480px] h-[350px] lg:h-auto flex-col bg-white rounded-2xl sm:rounded-[1.5rem] border border-[#E2E8F0] shadow-sm overflow-hidden shrink-0 lg:shrink-0 ${isSidebarVisible ? 'flex lg:flex' : 'hidden'}`}>
                     <div className="p-3 border-b border-[#E2E8F0] shrink-0">
                         <div className="relative">
                             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0AEC0]" />
