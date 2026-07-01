@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MURO.Application.DTOs.Support;
+using MURO.Application.Interfaces;
 using MURO.Domain.Entities;
 using MURO.Domain.Enums;
 using MURO.Infrastructure.Persistence;
@@ -14,11 +16,13 @@ public class TelegramWebhookController : ControllerBase
 {
     private readonly MuroDbContext _context;
     private readonly ILogger<TelegramWebhookController> _logger;
+    private readonly ISupportService _supportService;
 
-    public TelegramWebhookController(MuroDbContext context, ILogger<TelegramWebhookController> logger)
+    public TelegramWebhookController(MuroDbContext context, ILogger<TelegramWebhookController> logger, ISupportService supportService)
     {
         _context = context;
         _logger = logger;
+        _supportService = supportService;
     }
 
     [HttpPost]
@@ -93,18 +97,6 @@ public class TelegramWebhookController : ControllerBase
         var admin = await _context.Users.FirstOrDefaultAsync(u => u.Role == UserRole.SuperAdmin);
         if (admin == null) return; // Cannot reply if no admin exists to attribute it to
 
-        var msg = new SupportMessage
-        {
-            Id = Guid.NewGuid(),
-            TicketId = ticket.Id,
-            SenderId = admin.Id,
-            Body = text,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.SupportMessages.Add(msg);
-        ticket.Status = TicketStatus.InProgress;
-        
-        await _context.SaveChangesAsync();
+        await _supportService.ReplyAsync(ticket.Id, admin.Id, new ReplyTicketRequest(text));
     }
 }

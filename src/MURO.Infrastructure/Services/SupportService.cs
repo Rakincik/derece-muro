@@ -122,6 +122,12 @@ public class SupportService : ISupportService
 
         var sender = await _context.Users.FindAsync(senderId);
         var isAdmin = sender?.Role == UserRole.Admin || sender?.Role == UserRole.SuperAdmin || sender?.Role == UserRole.Assistant;
+
+        if (!isAdmin)
+        {
+            _ = _telegramBotService.SendReplyToTicketAsync(ticketId, msg.Body);
+        }
+
         return new TicketMessageDto(msg.Id, senderId, $"{sender?.FirstName} {sender?.LastName}", msg.Body, msg.CreatedAt, isAdmin);
     }
 

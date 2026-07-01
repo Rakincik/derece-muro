@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MURO.Application.Interfaces;
@@ -106,6 +107,57 @@ public class TelegramBotService : ITelegramBotService
 
     public async Task SendReplyToTicketAsync(Guid ticketId, string replyText)
     {
-        await Task.CompletedTask;
+        if (string.IsNullOrEmpty(_botToken) || string.IsNullOrEmpty(_adminChatId))
+        {
+            _logger.LogWarning("Telegram configuration is missing. Cannot send notification.");
+            return;
+        }
+
+        try
+        {
+            var ticket = await _dbContext.SupportTickets
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+            if (ticket == null)
+            {
+                _logger.LogWarning($"Ticket {ticketId} not found when trying to send Telegram reply notification.");
+                return;
+            }
+
+            var mapping = await _dbContext.TelegramMessageMappings
+                .FirstOrDefaultAsync(m => m.SupportTicketId == ticketId);
+
+            var userName = ticket.User != null ? $"{ticket.User.FirstName} {ticket.User.LastName}" : "Bilinmeyen Öğrenci";
+            
+            var text = $"💬 *YENİ MESAJ* (Konu: {ticket.Subject})\n\n" +
+                       $"👤 *Gönderen:* {userName}\n\n" +
+                       $"💬 *Cevap:*\n_{replyText}_";
+
+            var payload = new
+            {
+                chat_id = _adminChatId,
+                text = text,
+                parse_mode = "Markdown",
+                reply_to_message_id = mapping?.TelegramMessageId
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync($"{_telegramApiUrl}/sendMessage", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation($"Telegram reply notification sent for ticket {ticketId}.");
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Telegram API error on reply: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send Telegram reply notification");
+        }
     }
 }
