@@ -467,6 +467,15 @@ public class MuroDbContext : DbContext
             entity.HasIndex(pg => pg.PackageId);
         });
 
+        // SessionAttendance — Doğru ilişki eşlemesi
+        modelBuilder.Entity<SessionAttendance>(entity =>
+        {
+            entity.HasOne(sa => sa.Session)
+                  .WithMany(s => s.SessionAttendances)
+                  .HasForeignKey(sa => sa.SessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // ─── Soft Delete Global Query Filters (Restored for backward compatibility) ───
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Course>().HasQueryFilter(e => !e.IsDeleted);
