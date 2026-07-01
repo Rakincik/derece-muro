@@ -21,6 +21,9 @@ export const analyticsAdminApi = {
     studentScorecard: (token: string, tenantId: string, userId: string) =>
         api<StudentScorecardDto>(`/analytics/students/${userId}/scorecard`, { token, tenantId }),
 
+    studentScorecardsList: (token: string, tenantId: string) =>
+        api<StudentScorecardDto[]>(`/analytics/students/scorecards`, { token, tenantId }),
+
     studentAcademicHistory: (token: string, tenantId: string, userId: string) =>
         api<StudentAcademicHistoryDto>(`/analytics/students/${userId}/academic-history`, { token, tenantId }),
 

@@ -346,6 +346,26 @@ public class AnalyticsService : IAnalyticsService
         }, TimeSpan.FromMinutes(2));
     }
 
+    public async Task<List<StudentScorecardDto>> GetStudentScorecardsListAsync()
+    {
+        var cacheKey = "analytics:scorecards_list";
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var studentIds = await _context.Users
+                .Where(u => u.IsActive && u.Role == Domain.Enums.UserRole.Student)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            var scorecards = new List<StudentScorecardDto>();
+            foreach (var chunk in studentIds.Chunk(30))
+            {
+                var chunkTasks = chunk.Select(sid => GetStudentScorecardAsync(sid));
+                scorecards.AddRange(await Task.WhenAll(chunkTasks));
+            }
+            return scorecards;
+        }, TimeSpan.FromMinutes(5));
+    }
+
     // ── Admin: Tüm öğrencilerin toplu karne ortalaması ────────────────────────
     public async Task<ScorecardSummaryDto> GetScorecardSummaryAsync()
     {

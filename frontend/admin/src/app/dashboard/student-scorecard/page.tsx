@@ -355,15 +355,24 @@ export default function StudentScorecardPage() {
         if (!token || !tenantId) return;
         setLoading(true);
         try {
-            const [u, sess, summary] = await Promise.all([
+            const [u, sess, summary, scorecardsList] = await Promise.all([
                 notificationApi.allUsers(token, tenantId),
                 analyticsAdminApi.activeSessions(token, tenantId).catch(() => []),
                 analyticsAdminApi.scorecardSummary(token, tenantId).catch(() => null),
+                analyticsAdminApi.studentScorecardsList(token, tenantId).catch(() => []),
             ]);
             const students = u.filter(x => x.role === "Student" || x.role === "student");
             setUsers(students);
             setSessions(sess);
             if (summary) setClassAvgSummary(summary);
+
+            const scorecardsMap = new Map<string, StudentScorecardDto>();
+            (scorecardsList || []).forEach(card => {
+                if (card && card.userId) {
+                    scorecardsMap.set(card.userId, card);
+                }
+            });
+            setScorecards(scorecardsMap);
         } catch (e) {
             console.error("Scorecard data fetch error:", e);
         } finally {
@@ -439,31 +448,6 @@ export default function StudentScorecardPage() {
         return filtered.slice(startIndex, startIndex + itemsPerPage);
     }, [filtered, currentPage, itemsPerPage]);
 
-    // Load scorecards for visible (paginated) students
-    useEffect(() => {
-        if (!token || !tenantId || paginated.length === 0) return;
-
-        // Check if there are any students in the current page whose scorecard isn't loaded yet
-        const missingIds = paginated.map(u => u.id).filter(id => !scorecards.has(id));
-        if (missingIds.length === 0) return;
-
-        setLoadingCards(true);
-        Promise.all(
-            missingIds.map(id =>
-                analyticsAdminApi.studentScorecard(token, tenantId, id)
-                    .then(card => ({ userId: id, card }))
-                    .catch(() => null)
-            )
-        ).then(results => {
-            setScorecards(prev => {
-                const next = new Map(prev);
-                results.forEach(r => {
-                    if (r) next.set(r.userId, r.card);
-                });
-                return next;
-            });
-        }).catch(console.error).finally(() => setLoadingCards(false));
-    }, [token, tenantId, paginated, scorecards]);
 
     // CSV export
     const exportCSV = useCallback(() => {

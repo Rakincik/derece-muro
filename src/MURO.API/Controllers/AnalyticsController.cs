@@ -88,6 +88,11 @@ public class AnalyticsController : ControllerBase
     public async Task<ActionResult<StudentScorecardDto>> GetStudentScorecard(Guid studentId)
         => Ok(await _analyticsService.GetStudentScorecardAsync(studentId));
 
+    /// GET /api/v1/analytics/students/scorecards — Tüm öğrencilerin karneleri
+    [HttpGet("students/scorecards")]
+    public async Task<ActionResult<List<StudentScorecardDto>>> GetStudentScorecardsList()
+        => Ok(await _analyticsService.GetStudentScorecardsListAsync());
+
     /// GET /api/v1/analytics/students/{studentId}/academic-history — Öğrenci akademik geçmiş
     [HttpGet("students/{studentId:guid}/academic-history")]
     public async Task<ActionResult<StudentAcademicHistoryDto>> GetStudentAcademicHistory(Guid studentId)

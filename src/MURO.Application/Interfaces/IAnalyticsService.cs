@@ -14,6 +14,7 @@ public interface IAnalyticsService
     Task<List<DeviceSessionDto>> GetRecentSessionsAsync(int days = 7);
     Task<CourseAttendanceReportDto> GetCourseAttendanceReportAsync(Guid courseId);
     Task<StudentScorecardDto> GetStudentScorecardAsync(Guid studentId);
+    Task<List<StudentScorecardDto>> GetStudentScorecardsListAsync();
     Task<StudentAcademicHistoryDto> GetStudentAcademicHistoryAsync(Guid studentId);
     Task<ScorecardSummaryDto> GetScorecardSummaryAsync();
     Task<StudentDashboardDto> GetStudentDashboardAsync(Guid userId);
