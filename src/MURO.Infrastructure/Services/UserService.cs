@@ -157,23 +157,27 @@ public class UserService : IUserService
         
         if (string.IsNullOrWhiteSpace(username))
         {
-            var baseUsername = ToEnglishUsername(request.FirstName, request.LastName);
-            username = baseUsername;
-            int suffix = 1;
-            while (await _context.Users.AnyAsync(u => u.Username == username))
+            if (role == UserRole.Student && !string.IsNullOrEmpty(cleanedPhone))
             {
-                username = $"{baseUsername}{suffix}";
-                suffix++;
+                username = cleanedPhone;
+            }
+            else
+            {
+                var baseUsername = ToEnglishUsername(request.FirstName, request.LastName);
+                username = baseUsername;
+                int suffix = 1;
+                while (await _context.Users.AnyAsync(u => u.Username == username))
+                {
+                    username = $"{baseUsername}{suffix}";
+                    suffix++;
+                }
             }
         }
 
         string password = request.Password;
         if (isStudent && string.IsNullOrWhiteSpace(password))
         {
-            var lastTwo = cleanedPhone != null && cleanedPhone.Length >= 2 
-                ? cleanedPhone.Substring(cleanedPhone.Length - 2) 
-                : "00";
-            password = $"{request.TcNo}.{lastTwo}";
+            password = !string.IsNullOrWhiteSpace(email) ? email : "123456";
         }
 
         var tcCheck = request.TcNo?.Trim();
@@ -333,13 +337,20 @@ public class UserService : IUserService
 
             if (string.IsNullOrWhiteSpace(username) && existingUser == null)
             {
-                var baseUsername = ToEnglishUsername(req.FirstName, req.LastName);
-                username = baseUsername;
-                int suffix = 1;
-                while (allDbEmails.Contains(username) || generatedEmails.Contains(username))
+                if (isStudent && !string.IsNullOrEmpty(cleanedPhone))
                 {
-                    username = $"{baseUsername}{suffix}";
-                    suffix++;
+                    username = cleanedPhone;
+                }
+                else
+                {
+                    var baseUsername = ToEnglishUsername(req.FirstName, req.LastName);
+                    username = baseUsername;
+                    int suffix = 1;
+                    while (allDbEmails.Contains(username) || generatedEmails.Contains(username))
+                    {
+                        username = $"{baseUsername}{suffix}";
+                        suffix++;
+                    }
                 }
                 generatedEmails.Add(username);
             }
@@ -357,10 +368,7 @@ public class UserService : IUserService
             string password = req.Password;
             if (isStudent && string.IsNullOrEmpty(password))
             {
-                var lastTwo = cleanedPhone != null && cleanedPhone.Length >= 2 
-                    ? cleanedPhone.Substring(cleanedPhone.Length - 2) 
-                    : "00";
-                password = $"{req.TcNo}.{lastTwo}";
+                password = !string.IsNullOrWhiteSpace(email) ? email : "123456";
             }
             else if (!isStudent && string.IsNullOrWhiteSpace(password))
             {

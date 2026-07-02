@@ -317,8 +317,7 @@ export default function UsersPage() {
             } else {
                 let targetPassword = d.password;
                 if (!targetPassword && (d.role === "Student" || d.role === "Öğrenci")) {
-                    const lastTwo = d.phone && d.phone.length >= 2 ? d.phone.substring(d.phone.length - 2) : "00";
-                    targetPassword = d.tcNo ? `${d.tcNo}.${lastTwo}` : "123456";
+                    targetPassword = d.email || "123456";
                 } else if (!targetPassword) {
                     targetPassword = "123456";
                 }
@@ -971,7 +970,7 @@ export default function UsersPage() {
                                     <label className="block text-xs font-medium text-[#1B3B6F] mb-1.5">Oluşturulacak Kullanıcı Adı</label>
                                     <div className="w-full px-3.5 py-2.5 text-sm bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 font-bold flex items-center gap-2">
                                         <Zap size={14} className="text-emerald-500 animate-pulse shrink-0" />
-                                        {ToEnglishUsernameSlug(f.firstName, f.lastName) || "(Ad ve Soyad girin)"}
+                                        {f.phone || "(Telefon girin)"}
                                     </div>
                                 </div>
                                 <div>
@@ -1012,7 +1011,7 @@ export default function UsersPage() {
                                 <div className="text-xs bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-800 font-semibold flex items-center justify-between">
                                     <span>Varsayılan Öğrenci Şifresi:</span>
                                     <span className="font-mono bg-white px-2 py-0.5 rounded border border-blue-300 select-all tracking-wider text-sm font-bold">
-                                        {f.tcNo ? `${f.tcNo}.${f.phone.length >= 2 ? f.phone.substring(f.phone.length - 2) : ""}` : "(TC ve Telefon girin)"}
+                                        {f.email || "(E-posta girin)"}
                                     </span>
                                 </div>
                             )}
