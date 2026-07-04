@@ -171,9 +171,17 @@ public class UsersController : ControllerBase
 
             var tc = u.TC?.Trim() ?? "";
 
-            // Calculated password: tc + . + last 2 digits of phone
-            var lastTwo = phone.Length >= 2 ? phone.Substring(phone.Length - 2) : "00";
-            var password = $"{tc}.{lastTwo}";
+            var fn = string.IsNullOrWhiteSpace(u.Ad) ? "user" : u.Ad.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.ToLowerInvariant() ?? "user";
+            fn = fn.Replace("ğ", "g").Replace("ü", "u").Replace("ş", "s").Replace("ı", "i").Replace("ö", "o").Replace("ç", "c");
+            
+            var ln = string.IsNullOrWhiteSpace(u.Soyad) ? "x" : u.Soyad.Trim().ToLowerInvariant();
+            ln = ln.Replace("ğ", "g").Replace("ü", "u").Replace("ş", "s").Replace("ı", "i").Replace("ö", "o").Replace("ç", "c");
+            var lChar = string.IsNullOrEmpty(ln) ? "x" : ln.Substring(0, 1);
+            
+            var pStr = new string(phone.Where(char.IsDigit).ToArray());
+            var pLast2 = pStr.Length >= 2 ? pStr.Substring(pStr.Length - 2) : "00";
+            
+            var password = $"{fn}.{pLast2}.{lChar}";
 
             requests.Add(new CreateUserRequest(
                 u.Ad.Trim(),
@@ -210,6 +218,34 @@ public class UsersController : ControllerBase
             skippedCount = importResult.FailedCount,
             details = importResult.Details
         });
+    }
+
+    [HttpPost("bulk-reset-passwords")]
+    [AllowAnonymous] // ONLY TEMPORARY, WILL REMOVE AFTER EXECUTION
+    public async Task<IActionResult> BulkResetPasswords(
+        [FromServices] MURO.Infrastructure.Persistence.MuroDbContext dbContext)
+    {
+        var users = dbContext.Users.Where(u => u.Role == MURO.Domain.Enums.UserRole.Student).ToList();
+        int count = 0;
+        foreach (var u in users)
+        {
+            var fn = string.IsNullOrWhiteSpace(u.FirstName) ? "user" : u.FirstName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.ToLowerInvariant() ?? "user";
+            fn = fn.Replace("ğ", "g").Replace("ü", "u").Replace("ş", "s").Replace("ı", "i").Replace("ö", "o").Replace("ç", "c");
+            
+            var ln = string.IsNullOrWhiteSpace(u.LastName) ? "x" : u.LastName.Trim().ToLowerInvariant();
+            ln = ln.Replace("ğ", "g").Replace("ü", "u").Replace("ş", "s").Replace("ı", "i").Replace("ö", "o").Replace("ç", "c");
+            var lChar = string.IsNullOrEmpty(ln) ? "x" : ln.Substring(0, 1);
+            
+            var rawPhone = u.Phone ?? "";
+            var pStr = new string(rawPhone.Where(char.IsDigit).ToArray());
+            var pLast2 = pStr.Length >= 2 ? pStr.Substring(pStr.Length - 2) : "00";
+            
+            var newPassword = $"{fn}.{pLast2}.{lChar}";
+            u.PasswordHash = newPassword;
+            count++;
+        }
+        await dbContext.SaveChangesAsync();
+        return Ok(new { message = $"{count} öğrencinin şifresi başarıyla güncellendi." });
     }
 }
 

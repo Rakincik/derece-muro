@@ -51,6 +51,21 @@ const roleRank: Record<string, number> = {
 const PER_PAGE_OPTIONS = [10, 50, 100];
 type SortField = "name" | "role" | "group" | "status" | "phone" | "createdAt" | "lastLogin"; type SortDir = "asc" | "desc";
 
+const normalizeTurkish = (str: string) => {
+    return str.toLocaleLowerCase('tr')
+        .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+        .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c');
+};
+
+const generateDefaultPassword = (firstName: string = "", lastName: string = "", phone: string = "") => {
+    const fn = normalizeTurkish(firstName).trim().split(/\s+/)[0] || "user";
+    const ln = normalizeTurkish(lastName).trim();
+    const lChar = ln.length > 0 ? ln.charAt(0) : "x";
+    const pStr = (phone || "").replace(/\D/g, "");
+    const pLast2 = pStr.length >= 2 ? pStr.slice(-2) : "00";
+    return `${fn}.${pLast2}.${lChar}`;
+};
+
 function formatPhoneForDisplay(phone?: string): string {
     if (!phone) return "";
     let digits = phone.replace(/\D/g, "");
@@ -317,7 +332,7 @@ export default function UsersPage() {
             } else {
                 let targetPassword = d.password;
                 if (!targetPassword && (d.role === "Student" || d.role === "Öğrenci")) {
-                    targetPassword = d.email || "123456";
+                    targetPassword = generateDefaultPassword(d.firstName, d.lastName, d.phone);
                 } else if (!targetPassword) {
                     targetPassword = "123456";
                 }
