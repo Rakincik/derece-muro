@@ -154,7 +154,15 @@ public class GroupService : IGroupService
         {
             if (request.ParentGroupId == groupId)
                 throw new ArgumentException("Grup kendi kendisinin alt grubu olamaz.");
-            group.ParentId = request.ParentGroupId;
+                
+            if (request.ParentGroupId == Guid.Empty)
+            {
+                group.ParentId = null;
+            }
+            else
+            {
+                group.ParentId = request.ParentGroupId;
+            }
         }
 
         await _context.SaveChangesAsync();
